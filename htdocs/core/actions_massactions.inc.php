@@ -586,24 +586,9 @@ if ($massaction == 'confirm_createbills')   // Create bills from orders
 
         if ($objecttmp->id > 0)
         {
-            $sql = "INSERT INTO ".MAIN_DB_PREFIX."element_element (";
-            $sql.= "fk_source";
-            $sql.= ", sourcetype";
-            $sql.= ", fk_target";
-            $sql.= ", targettype";
-            $sql.= ") VALUES (";
-            $sql.= $id_order;
-            $sql.= ", '".$objecttmp->origin."'";
-            $sql.= ", ".$objecttmp->id;
-            $sql.= ", '".$objecttmp->element."'";
-            $sql.= ")";
+            $res = $objecttmp->add_object_linked(null, $id_order);
 
-            if (! $db->query($sql))
-            {
-                $error++;
-            }
-
-            if (! $error)
+            if ($res > 0)
             {
                 $lines = $cmd->lines;
                 if (empty($lines) && method_exists($cmd, 'fetch_lines'))
@@ -618,10 +603,14 @@ if ($massaction == 'confirm_createbills')   // Create bills from orders
                 for ($i=0;$i<$num;$i++)
                 {
                     $desc=($lines[$i]->desc?$lines[$i]->desc:$lines[$i]->libelle);
-                    // If we build one invoice for several order, we must put the invoice of order on the line
+                    // If we build one invoice for several order, we must put the reference of order on the line
                     if (! empty($createbills_onebythird))
                     {
-                        $desc=dol_concatdesc($desc, $langs->trans("Order").' '.$cmd->ref.' - '.dol_print_date($cmd->date, 'day', $langs));
+                        $reforder = $langs->trans("Order").' '.$cmd->ref;
+                        if(!empty($cmd->ref_customer)) $reforder.= ' (' . $cmd->ref_client . ') ';
+                        $reforder.= ' - '.dol_print_date($cmd->date, 'day', $langs);
+
+                        $desc=dol_concatdesc($desc, $reforder);
                     }
 
                     if ($lines[$i]->subprice < 0)
