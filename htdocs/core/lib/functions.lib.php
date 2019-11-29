@@ -2206,6 +2206,7 @@ function dol_print_email($email, $cid = 0, $socid = 0, $addlink = 0, $max = 64, 
 function getArrayOfSocialNetworks()
 {
     global $conf, $db;
+	if (empty($conf->socialnetworks->enabled)) return array();
     $sql = "SELECT rowid, code, label, url, icon, active FROM ".MAIN_DB_PREFIX."c_socialnetworks";
     $sql .= " WHERE entity=".$conf->entity;
     $socialnetworks = array();
@@ -2235,7 +2236,7 @@ function getArrayOfSocialNetworks()
  */
 function dol_print_socialnetworks($value, $cid, $socid, $type)
 {
-	global $conf, $user, $langs;
+	global $conf, $user, $langs, $socialnetworks;
 
 	$htmllink = $value;
 
@@ -2243,9 +2244,10 @@ function dol_print_socialnetworks($value, $cid, $socid, $type)
 
 	if (!empty($type))
 	{
+		$url = str_replace('{socialid}', $value, $socialnetworks[$type]['url']);
 		$htmllink = '<div class="divsocialnetwork inline-block valignmiddle">';
 		$htmllink .= img_picto($langs->trans(strtoupper($type)), $type.'.png', '', false, 0, 0, '', 'paddingright', 0);
-		$htmllink .= $value;
+		$htmllink .= '<a href="'.$url.'" target="_blank">'.$value.'</a>';
 		if ($type == 'skype')
 		{
 			$htmllink .= '&nbsp;';
