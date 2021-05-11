@@ -169,3 +169,63 @@ function onChangeDispatchLineQty() {
 		$(this).data('qty', $(this).val());
 	}
 }
+
+/**
+ * globalInputDispatchLine
+ * Allow to input multiple dispatch lines at once
+ *
+ * @param	index	int		index of product line. 0 = first product line
+ */
+function globalInputDispatchLine(index, type) {
+	console.log("fourn/js/lib_dispatch.js.php Global batch input index="+index);
+
+	let html = '<textarea name="global_batch_'+index+'" cols="50" rows="20"></textarea>';
+	$('#dialogforpopup').html(html);
+	$('#dialogforpopup').dialog({
+		height: "auto",
+		width: "auto",
+		modal: true,
+		buttons: {
+			"Save": function () {
+				addGlobalDispatchLine(index, type);
+				$(this).dialog("close");
+			}
+		}
+	});
+
+	$('#dialogforpopup').dialog('open');
+}
+
+
+function addGlobalDispatchLine(index, type) {
+	let globalVal = $('textarea[name="global_batch_'+index+'"]').val().trim();
+	let aLine = globalVal.split("\n");
+	for(let i in aLine) {
+		if(aLine[i] == '') continue;
+		let aBatch = aLine[i].split(/[\t;,]/);
+		let batch = aBatch[0];
+		let qty = aBatch[1] ? aBatch[1] : 1;
+		let warehouse = aBatch[2];
+		let dmd = aBatch[3];
+		let dlc = aBatch[4];
+
+		$('#lot_number_'+i+'_'+index).val(batch);
+		$('#qty_'+i+'_'+index).val(qty);
+		if(warehouse != '') {
+			//alert(warehouse);
+			//alert($('#fk_default_warehouse').find('option[text="'+warehouse+'"]').val());
+			//alert($('#fk_default_warehouse').find('option[text="E02"]').val());
+			$('#entrepot_'+i+'_'+index).val($('#entrepot_'+i+'_'+index).attr('data-html'));
+		}
+		if(dmd != '') {
+			$('#dlc_'+i+'_'+index).val(dmd);
+			$('#dlc_'+i+'_'+index).change();
+		}
+		if(dlc != '') {
+			$('#dluo_'+i+'_'+index).val(dlc);
+			$('#dluo_'+i+'_'+index).change();
+		}
+
+		if(i < aLine.length - 1) addDispatchLine(index, type);
+	}
+}
