@@ -124,12 +124,12 @@ class CommandeFournisseur extends CommonOrder
 	/**
 	 * @var array List of status
 	 */
-	public $statuts;
+	public $labelStatus;
 
 	/**
 	 * @var array List of status short
 	 */
-	public $statuts_short;
+	public $labelStatusShort;
 
 	public $billed;
 
@@ -211,6 +211,9 @@ class CommandeFournisseur extends CommonOrder
 	public $origin;
 	public $origin_id;
 	public $linked_objects = array();
+
+	public $date_lim_reglement;
+	public $receptions = array();
 
 	// Multicurrency
 	/**
@@ -785,33 +788,33 @@ class CommandeFournisseur extends CommonOrder
 		// phpcs:enable
 		global $conf, $langs, $hookmanager;
 
-		if (empty($this->statuts) || empty($this->statuts_short)) {
+		if (empty($this->labelStatus) || empty($this->labelStatusShort)) {
 			$langs->load('orders');
 
-			$this->statuts[0] = 'StatusSupplierOrderDraft';
-			$this->statuts[1] = 'StatusSupplierOrderValidated';
-			$this->statuts[2] = 'StatusSupplierOrderApproved';
+			$this->labelStatus[0] = 'StatusSupplierOrderDraft';
+			$this->labelStatus[1] = 'StatusSupplierOrderValidated';
+			$this->labelStatus[2] = 'StatusSupplierOrderApproved';
 			if (empty($conf->global->SUPPLIER_ORDER_USE_DISPATCH_STATUS)) {
-				$this->statuts[3] = 'StatusSupplierOrderOnProcess';
+				$this->labelStatus[3] = 'StatusSupplierOrderOnProcess';
 			} else {
-				$this->statuts[3] = 'StatusSupplierOrderOnProcessWithValidation';
+				$this->labelStatus[3] = 'StatusSupplierOrderOnProcessWithValidation';
 			}
-			$this->statuts[4] = 'StatusSupplierOrderReceivedPartially';
-			$this->statuts[5] = 'StatusSupplierOrderReceivedAll';
-			$this->statuts[6] = 'StatusSupplierOrderCanceled'; // Approved->Canceled
-			$this->statuts[7] = 'StatusSupplierOrderCanceled'; // Process running->canceled
-			$this->statuts[9] = 'StatusSupplierOrderRefused';
+			$this->labelStatus[4] = 'StatusSupplierOrderReceivedPartially';
+			$this->labelStatus[5] = 'StatusSupplierOrderReceivedAll';
+			$this->labelStatus[6] = 'StatusSupplierOrderCanceled'; // Approved->Canceled
+			$this->labelStatus[7] = 'StatusSupplierOrderCanceled'; // Process running->canceled
+			$this->labelStatus[9] = 'StatusSupplierOrderRefused';
 
 			// List of language codes for status
-			$this->statuts_short[0] = 'StatusSupplierOrderDraftShort';
-			$this->statuts_short[1] = 'StatusSupplierOrderValidatedShort';
-			$this->statuts_short[2] = 'StatusSupplierOrderApprovedShort';
-			$this->statuts_short[3] = 'StatusSupplierOrderOnProcessShort';
-			$this->statuts_short[4] = 'StatusSupplierOrderReceivedPartiallyShort';
-			$this->statuts_short[5] = 'StatusSupplierOrderReceivedAllShort';
-			$this->statuts_short[6] = 'StatusSupplierOrderCanceledShort';
-			$this->statuts_short[7] = 'StatusSupplierOrderCanceledShort';
-			$this->statuts_short[9] = 'StatusSupplierOrderRefusedShort';
+			$this->labelStatusShort[0] = 'StatusSupplierOrderDraftShort';
+			$this->labelStatusShort[1] = 'StatusSupplierOrderValidatedShort';
+			$this->labelStatusShort[2] = 'StatusSupplierOrderApprovedShort';
+			$this->labelStatusShort[3] = 'StatusSupplierOrderOnProcessShort';
+			$this->labelStatusShort[4] = 'StatusSupplierOrderReceivedPartiallyShort';
+			$this->labelStatusShort[5] = 'StatusSupplierOrderReceivedAllShort';
+			$this->labelStatusShort[6] = 'StatusSupplierOrderCanceledShort';
+			$this->labelStatusShort[7] = 'StatusSupplierOrderCanceledShort';
+			$this->labelStatusShort[9] = 'StatusSupplierOrderRefusedShort';
 		}
 
 		$statustrans = array(
@@ -839,8 +842,8 @@ class CommandeFournisseur extends CommonOrder
 			$statusClass = 'status6';
 		}
 
-		$statusLong = $langs->transnoentitiesnoconv($this->statuts[$status]).$billedtext;
-		$statusShort = $langs->transnoentitiesnoconv($this->statuts_short[$status]);
+		$statusLong = $langs->transnoentitiesnoconv($this->labelStatus[$status]).$billedtext;
+		$statusShort = $langs->transnoentitiesnoconv($this->labelStatusShort[$status]);
 
 		$parameters = array('status' => $status, 'mode' => $mode, 'billed' => $billed);
 		$reshook = $hookmanager->executeHooks('LibStatut', $parameters, $this); // Note that $action and $object may have been modified by hook
@@ -2913,7 +2916,6 @@ class CommandeFournisseur extends CommonOrder
 			$this->line->localtax2_type = empty($localtaxes_type[2]) ? '' : $localtaxes_type[2];
 			$this->line->remise_percent = $remise_percent;
 			$this->line->subprice       = $pu_ht;
-			$this->line->rang           = $this->rang;
 			$this->line->info_bits      = $info_bits;
 			$this->line->total_ht       = $total_ht;
 			$this->line->total_tva      = $total_tva;
@@ -2921,7 +2923,8 @@ class CommandeFournisseur extends CommonOrder
 			$this->line->total_localtax2 = $total_localtax2;
 			$this->line->total_ttc      = $total_ttc;
 			$this->line->product_type   = $type;
-			$this->line->special_code   = (!empty($this->special_code) ? $this->special_code : 0);
+			$this->line->special_code   = $oldline->special_code;
+			$this->line->rang           = $oldline->rang;
 			$this->line->origin         = $this->origin;
 			$this->line->fk_unit        = $fk_unit;
 
@@ -3027,7 +3030,6 @@ class CommandeFournisseur extends CommonOrder
 			$line->desc = $langs->trans("Description")." ".$xnbp;
 			$line->qty = 1;
 			$line->subprice = 100;
-			$line->price = 100;
 			$line->tva_tx = 19.6;
 			$line->localtax1_tx = 0;
 			$line->localtax2_tx = 0;
@@ -3927,7 +3929,7 @@ class CommandeFournisseurLigne extends CommonOrderLine
 		$sql .= ", ".($this->multicurrency_total_ht ? price2num($this->multicurrency_total_ht) : '0');
 		$sql .= ", ".($this->multicurrency_total_tva ? price2num($this->multicurrency_total_tva) : '0');
 		$sql .= ", ".($this->multicurrency_total_ttc ? price2num($this->multicurrency_total_ttc) : '0');
-		$sql .= ", ".($this->fk_parent_line > 0 ? $this->fk_parent_line : 'null');
+		$sql .= ", ".((!empty($this->fk_parent_line) && $this->fk_parent_line > 0) ? $this->fk_parent_line : 'null');
 		$sql .= ")";
 
 		dol_syslog(get_class($this)."::insert", LOG_DEBUG);

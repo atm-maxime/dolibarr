@@ -878,7 +878,7 @@ foreach ($object->fields as $key => $val) {
 		} elseif ($key == 'fk_statut') {
 			$arrayofstatus = array();
 			$arrayofstatus['openall'] = '-- '.$langs->trans('OpenAll').' --';
-			foreach ($object->statuts_short as $key2 => $val2) {
+			foreach ($object->labelStatusShort as $key2 => $val2) {
 				if ($key2 == Ticket::STATUS_CLOSED) {
 					$arrayofstatus['closeall'] = '-- '.$langs->trans('ClosedAll').' --';
 				}
@@ -1020,7 +1020,7 @@ while ($i < $imaxinloop) {
 	// Store properties in $object
 	$object->setVarsFromFetchObj($obj);
 	$object->type_code = $obj->type_code;
-	$object->status = $object->fk_statut; // for backwad compatibility
+	$object->status = $object->fk_statut; // because field name is fk_statut
 
 	if ($mode == 'kanban') {
 		if ($i == 0) {

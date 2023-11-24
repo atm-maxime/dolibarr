@@ -35,6 +35,11 @@ abstract class CommonInvoice extends CommonObject
 	use CommonIncoterm;
 
 	/**
+	 * @var string		Label used as ref for template invoices
+	 */
+	public $title;
+
+	/**
 	 * @var int		Type of invoice (See TYPE_XXX constants)
 	 */
 	public $type = self::TYPE_STANDARD;
@@ -87,18 +92,6 @@ abstract class CommonInvoice extends CommonObject
 	public $sumcreditnote;
 	public $sumcreditnote_multicurrency;
 	public $remaintopay;
-
-	// Multicurrency
-	/**
-	 * @var int ID
-	 */
-	public $fk_multicurrency;
-
-	public $multicurrency_code;
-	public $multicurrency_tx;
-	public $multicurrency_total_ht;
-	public $multicurrency_total_tva;
-	public $multicurrency_total_ttc;
 
 	/**
 	 * @var int
@@ -1983,13 +1976,6 @@ abstract class CommonInvoiceLine extends CommonObjectLine
 	public $info_bits = 0;
 
 	public $special_code = 0;
-
-	public $fk_multicurrency;
-	public $multicurrency_code;
-	public $multicurrency_subprice;
-	public $multicurrency_total_ht;
-	public $multicurrency_total_tva;
-	public $multicurrency_total_ttc;
 
 	public $fk_user_author;
 	public $fk_user_modif;

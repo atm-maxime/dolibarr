@@ -442,24 +442,34 @@ abstract class CommonObject
 	 */
 	public $shipping_method;
 
+	// Multicurrency
 	/**
-	 * @var string multicurrency code
+	 * @var int ID
+	 */
+	public $fk_multicurrency;
+
+	/**
+	 * @var string Multicurrency code
 	 */
 	public $multicurrency_code;
+
 	/**
-	 * @var string multicurrency tx
+	 * @var float Multicurrency rate
 	 */
 	public $multicurrency_tx;
+
 	/**
-	 * @var string multicurrency total_ht
+	 * @var float Multicurrency total without tax
 	 */
 	public $multicurrency_total_ht;
+
 	/**
-	 * @var string multicurrency total_tva
+	 * @var float Multicurrency total vat
 	 */
 	public $multicurrency_total_tva;
+
 	/**
-	 * @var string multicurrency total_ttc
+	 * @var float Multicurrency total with tax
 	 */
 	public $multicurrency_total_ttc;
 
@@ -672,25 +682,17 @@ abstract class CommonObject
 	/**
 	 * @var array		Array with label of status
 	 */
-	public $labelStatus;
-
-	/**
-	 * @var array array of status string
-	 * @deprecated 	Use instead labelStatus
-	 */
-	public $statuts = array();
+	public $labelStatus = array();
 
 	/**
 	 * @var array		Array with short label of status
 	 */
-	protected $labelStatusShort;
+	public $labelStatusShort = array();
 
 	/**
-	 * @var array array of short status string
-	 * @deprecated 	Use instead labelStatusShort
+	 * @var array		Array to store list of tpl
 	 */
-	public $statuts_short = array();
-
+	public $tpl;
 
 
 	/**
@@ -1770,7 +1772,9 @@ abstract class CommonObject
 			return 0;
 		}
 
-		$sql = "SELECT rowid FROM ".$this->db->prefix().$this->table_element." WHERE ".$this->table_ref_field." LIKE '".$this->db->escape($ref)."' LIMIT 1";
+		$sql = "SELECT rowid FROM ".$this->db->prefix().$this->table_element;
+		$sql .= " WHERE ".$this->table_ref_field." LIKE '".$this->db->escape($ref)."'";	// no escapeforlike here
+		$sql .= " LIMIT 1";
 
 		$query = $this->db->query($sql);
 
@@ -3825,7 +3829,7 @@ abstract class CommonObject
 			// Situations totals
 			if (!empty($this->situation_cycle_ref) && !empty($this->situation_counter) && $this->situation_counter > 1 && method_exists($this, 'get_prev_sits')) {
 				include_once DOL_DOCUMENT_ROOT.'/compta/facture/class/facture.class.php';
-				if ($this->type != Facture::TYPE_CREDIT_NOTE) {
+				if ($this->type != Facture::TYPE_CREDIT_NOTE) {	// @phpstan-ignore-line
 					$prev_sits = $this->get_prev_sits();
 
 					foreach ($prev_sits as $sit) {				// $sit is an object Facture loaded with a fetch.
@@ -4585,7 +4589,7 @@ abstract class CommonObject
 					if ($fieldstatus == 'tosell') {
 						$this->status = $status;
 					} elseif ($fieldstatus == 'tobuy') {
-						$this->status_buy = $status;
+						$this->status_buy = $status;	// @phpstan-ignore-line
 					} else {
 						$this->statut = $status;
 						$this->status = $status;
@@ -4979,8 +4983,7 @@ abstract class CommonObject
 	 */
 	public function formAddObjectLine($dateSelector, $seller, $buyer, $defaulttpldir = '/core/tpl')
 	{
-		global $conf, $user, $langs, $object, $hookmanager, $extrafields;
-		global $form;
+		global $conf, $user, $langs, $object, $hookmanager, $extrafields, $form;
 
 		// Line extrafield
 		if (!is_object($extrafields)) {
@@ -9103,8 +9106,8 @@ abstract class CommonObject
 						}
 						if ($showaction) {
 							$return .= '<br>';
-							// On propose la generation de la vignette si elle n'existe pas et si la taille est superieure aux limites
-							if ($photo_vignette && (image_format_supported($photo) > 0) && ($this->imgWidth > $maxWidth || $this->imgHeight > $maxHeight)) {
+							// If $photo_vignette set, we add link to generate thumbs if file is an image and ->imgWidth or->imgHeight higher than limits
+							if ($photo_vignette && (image_format_supported($photo) > 0) && ((isset($this->imgWidth) && $this->imgWidth > $maxWidth) || (isset($this->imgHeight) && $this->imgHeight > $maxHeight))) {
 								$return .= '<a href="'.$_SERVER["PHP_SELF"].'?id='.$this->id.'&action=addthumb&token='.newToken().'&file='.urlencode($pdir.$viewfilename).'">'.img_picto($langs->trans('GenerateThumb'), 'refresh').'&nbsp;&nbsp;</a>';
 							}
 							// Special cas for product
@@ -10283,7 +10286,7 @@ abstract class CommonObject
 		);
 		foreach ($fields as $key => $value) {
 			if (array_key_exists($key, $this->fields)) {
-				$this->{$key} = $value;
+				$this->{$key} = $value;		// @phpstan-ignore-line
 			}
 		}
 
