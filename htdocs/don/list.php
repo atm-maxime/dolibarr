@@ -37,9 +37,9 @@ $langs->loadLangs(array('companies', 'donations'));
 
 $action     = GETPOST('action', 'aZ09') ? GETPOST('action', 'aZ09') : 'view'; // The action 'create'/'add', 'edit'/'update', 'view', ...
 $massaction = GETPOST('massaction', 'alpha'); // The bulk action (combo box choice into lists)
-$contextpage = GETPOST('contextpage', 'aZ') ?GETPOST('contextpage', 'aZ') : 'sclist';
+$contextpage = GETPOST('contextpage', 'aZ') ? GETPOST('contextpage', 'aZ') : 'sclist';
 
-$limit = GETPOST('limit', 'int') ?GETPOST('limit', 'int') : $conf->liste_limit;
+$limit = GETPOST('limit', 'int') ? GETPOST('limit', 'int') : $conf->liste_limit;
 $sortfield = GETPOST('sortfield', 'aZ09comma');
 $sortorder = GETPOST('sortorder', 'aZ09comma');
 $page = GETPOSTISSET('pageplusone') ? (GETPOST('pageplusone') - 1) : GETPOST("page", 'int');
@@ -59,7 +59,7 @@ if (!$sortfield) {
 }
 
 $search_status = (GETPOST("search_status", 'intcomma') != '') ? GETPOST("search_status", 'intcomma') : "-4";
-$search_all = trim((GETPOST('search_all', 'alphanohtml') != '') ?GETPOST('search_all', 'alphanohtml') : GETPOST('sall', 'alphanohtml'));
+$search_all = trim((GETPOST('search_all', 'alphanohtml') != '') ? GETPOST('search_all', 'alphanohtml') : GETPOST('sall', 'alphanohtml'));
 $search_ref = GETPOST('search_ref', 'alpha');
 $search_company = GETPOST('search_company', 'alpha');
 $search_thirdparty = GETPOST('search_thirdparty', 'alpha');
@@ -321,7 +321,7 @@ if (getDolGlobalString('MAIN_CHECKBOX_LEFT_COLUMN')) {
 print '<td class="liste_titre">';
 print '<input class="flat" size="10" type="text" name="search_ref" value="'.$search_ref.'">';
 print '</td>';
-if (!empty($conf->global->DONATION_USE_THIRDPARTIES)) {
+if (getDolGlobalString('DONATION_USE_THIRDPARTIES')) {
 	print '<td class="liste_titre">';
 	print '<input class="flat" size="10" type="text" name="search_thirdparty" value="'.$search_thirdparty.'">';
 	print '</td>';
@@ -372,7 +372,7 @@ if (getDolGlobalString('MAIN_CHECKBOX_LEFT_COLUMN')) {
 }
 print_liste_field_titre("Ref", $_SERVER["PHP_SELF"], "d.rowid", "", $param, "", $sortfield, $sortorder);
 $totalarray['nbfield']++;
-if (!empty($conf->global->DONATION_USE_THIRDPARTIES)) {
+if (getDolGlobalString('DONATION_USE_THIRDPARTIES')) {
 	print_liste_field_titre("ThirdParty", $_SERVER["PHP_SELF"], "d.fk_soc", "", $param, "", $sortfield, $sortorder);
 	$totalarray['nbfield']++;
 } else {
@@ -453,7 +453,7 @@ while ($i < $imaxinloop) {
 		$donationstatic->lastname = $obj->lastname;
 		$donationstatic->firstname = $obj->firstname;
 		print "<td>".$donationstatic->getNomUrl(1)."</td>";
-		if (!empty($conf->global->DONATION_USE_THIRDPARTIES)) {
+		if (getDolGlobalString('DONATION_USE_THIRDPARTIES')) {
 			if (!empty($obj->socid) && $company->id > 0) {
 				print "<td>".$company->getNomUrl(1)."</td>";
 			} else {
