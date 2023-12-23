@@ -389,6 +389,39 @@ if (empty($reshook)) {
 	} elseif ($action == 'set_incoterms' && isModEnabled('incoterm') && $usercancreate) {
 		// Set incoterm
 		$result = $object->setIncoterms(GETPOST('incoterm_id', 'int'), GETPOST('location_incoterms', 'alpha'));
+	} elseif ($action == 'create' && $usercancreate && getDolGlobalInt('PROPAL_CREATE_SKIP_DRAFT')) {
+		// Create proposal without the draft form
+		$object->socid = $socid;
+		$object->fetch_thirdparty();
+
+		$datep = dol_now();
+		$duration = getDolGlobalInt('PROPALE_VALIDITY_DURATION');
+
+		$object->date = $datep;
+		$object->duree_validite = $duration;
+		$object->cond_reglement_id = $object->thirdparty->cond_reglement_id;
+		$object->mode_reglement_id = $object->thirdparty->mode_reglement_id;
+		$object->fk_account = $object->thirdparty->fk_account;
+		$object->shipping_method_id = $object->thirdparty->shipping_method_id;
+		$object->model_pdf = getDolGlobalString('PROPALE_ADDON_PDF');
+
+		$object->origin = GETPOST('origin');
+		$object->origin_id = GETPOST('originid');
+
+		// Multicurrency
+		if (isModEnabled("multicurrency")) {
+			$object->multicurrency_code = $object->thirdparty->multicurrency_code;
+		}
+
+		$id = $object->create($user);
+		if ($id > 0) {
+			$db->commit();
+			header('Location: '.$_SERVER["PHP_SELF"].'?id='.$id);
+			exit();
+		} else {
+			setEventMessages($object->error, $object->errors, 'errors');
+			$db->rollback();
+		}
 	} elseif ($action == 'add' && $usercancreate) {
 		// Create proposal
 		$object->socid = $socid;
@@ -440,8 +473,6 @@ if (empty($reshook)) {
 					$object->contact_id = GETPOST('contactid', 'int');
 					$object->fk_project = GETPOST('projectid', 'int');
 					$object->model_pdf = GETPOST('model', 'alphanohtml');
-					$object->author = $user->id; // deprecated
-					$object->user_author_id = $user->id;
 					$object->note_private = GETPOST('note_private', 'restricthtml');
 					$object->note_public = GETPOST('note_public', 'restricthtml');
 					$object->statut = Propal::STATUS_DRAFT;
@@ -470,7 +501,6 @@ if (empty($reshook)) {
 				$object->contact_id = GETPOST('contactid', 'int');
 				$object->fk_project = GETPOST('projectid', 'int');
 				$object->model_pdf = GETPOST('model');
-				$object->author = $user->id; // deprecated
 				$object->note_private = GETPOST('note_private', 'restricthtml');
 				$object->note_public = GETPOST('note_public', 'restricthtml');
 				$object->fk_incoterms = GETPOST('incoterm_id', 'int');
