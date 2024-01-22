@@ -466,7 +466,7 @@ class StockTransferLine extends CommonObjectLine
 			);
 
 			if ($result < 0) {
-				setEventMessages($p->error, $p->errors, 'errors');
+				setEventMessages($movementstock->error, $movementstock->errors, 'errors');
 				return 0;
 			}
 		} else {
@@ -511,7 +511,7 @@ class StockTransferLine extends CommonObjectLine
 				);
 
 				if ($result < 0) {
-					setEventMessages($p->error, $p->errors, 'errors');
+					setEventMessages($movementstock->error, $movementstock->errors, 'errors');
 					return 0;
 				}
 			} else {
