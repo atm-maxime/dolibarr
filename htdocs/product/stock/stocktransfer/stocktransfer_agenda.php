@@ -201,7 +201,7 @@ if ($object->id > 0) {
 	$objthirdparty = $object;
 	$objcon = new stdClass();
 
-	$out = '&origin='.$object->element.'&originid='.$object->id;
+	$out = '&origin='.urlencode($object->element.(property_exists($object, 'module') ? '@'.$object->module : '')).'&originid='.urlencode($object->id);
 	$permok = $user->hasRight('agenda', 'myactions', 'create');
 	if ((!empty($objthirdparty->id) || !empty($objcon->id)) && $permok) {
 		//$out.='<a href="'.DOL_URL_ROOT.'/comm/action/card.php?action=create';
