@@ -1112,7 +1112,7 @@ if ($resql) {
 	// --------------------------------------------------------------------
 	print '<tr class="liste_titre_filter">';
 	// Actions and select
-	if (getDolGlobalString('MAIN_CHECKBOX_LEFT_COLUMN')) {
+	if ($conf->main_checkbox_left_column) {
 		print '<td class="liste_titre valignmiddle center">';
 		$searchpicto = $form->showFilterButtons('left');
 		print $searchpicto;
@@ -1219,7 +1219,7 @@ if ($resql) {
 	// Fields title
 	print '<tr class="liste_titre">';
 	// Actions and select
-	if (getDolGlobalString('MAIN_CHECKBOX_LEFT_COLUMN')) {
+	if ($conf->main_checkbox_left_column) {
 		print getTitleFieldOfList($selectedfields, 0, $_SERVER["PHP_SELF"], '', '', '', '', $sortfield, $sortorder, 'center maxwidthsearch ')."\n";
 		$totalarray['nbfield']++;
 	}
@@ -1397,7 +1397,7 @@ if ($resql) {
 
 				print '<tr class="oddeven trforbreak">';
 				// Action column
-				if (getDolGlobalString('MAIN_CHECKBOX_LEFT_COLUMN')) {
+				if ($conf->main_checkbox_left_column) {
 					print '<td></td>';
 				}
 				if ($tmpnbfieldbeforebalance) {
@@ -1482,7 +1482,7 @@ if ($resql) {
 		print '<tr class="oddeven" '.$backgroundcolor.'>';
 
 		// Action column
-		if (getDolGlobalString('MAIN_CHECKBOX_LEFT_COLUMN')) {
+		if ($conf->main_checkbox_left_column) {
 			print '<td class="center">';
 			if (!$objp->conciliated && ($action == 'reconcile' || $action == 'confirm_deleteonreconcile')) {
 				print '<input class="flat checkforselect" name="rowid['.$objp->rowid.']" type="checkbox" name="toselect[]" value="'.$objp->rowid.'" size="1"'.(!empty($tmparray[$objp->rowid]) ? ' checked' : '').'>';

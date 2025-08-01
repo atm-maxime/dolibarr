@@ -897,7 +897,7 @@ if (!empty($id) || !empty($ref)) {
 			<tr class="liste_titre">
 				<?php
 				// Action column
-				if (getDolGlobalString('MAIN_CHECKBOX_LEFT_COLUMN')) {
+				if ($conf->main_checkbox_left_column) {
 					print '<td class="liste_titre center">';
 					$searchpicto = $form->showCheckAddButtons('checkforselect', 1);
 					print $searchpicto;
@@ -929,7 +929,7 @@ if (!empty($id) || !empty($ref)) {
 				print '<tr class="oddeven">';
 
 				// Action column
-				if (getDolGlobalString('MAIN_CHECKBOX_LEFT_COLUMN')) {
+				if ($conf->main_checkbox_left_column) {
 					print '<td class="nowrap center">';
 					if (!empty($productCombinations) || $massactionbutton || $massaction) {   // If we are in select mode (massactionbutton defined) or if we have already selected and sent an action ($massaction) defined
 						$selected = 0;

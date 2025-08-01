@@ -976,7 +976,7 @@ function show_projects($conf, $langs, $db, $object, $backtopage = '', $nocreatel
 			$num = $db->num_rows($result);
 
 			print '<tr class="liste_titre">';
-			if (getDolGlobalString('MAIN_CHECKBOX_LEFT_COLUMN')) {
+			if ($conf->main_checkbox_left_column) {
 				print '<td class="center">';
 				$selectedfields = (is_array($arrayofmassactions) && count($arrayofmassactions) ? $form->showCheckAddButtons('checkforselect', 1) : '');
 				print $selectedfields;
@@ -1015,7 +1015,7 @@ function show_projects($conf, $langs, $db, $object, $backtopage = '', $nocreatel
 					if ($user->hasRight('projet', 'lire') && $userAccess > 0) {
 						print '<tr class="oddeven">';
 
-						if (getDolGlobalString('MAIN_CHECKBOX_LEFT_COLUMN')) {
+						if ($conf->main_checkbox_left_column) {
 							print '<td class="nowrap center actioncolumn">';
 							if ($massactionbutton || $massaction) {
 								$selected = 0;
@@ -1473,7 +1473,7 @@ function show_contacts($conf, $langs, $db, $object, $backtopage = '', $showuserl
 	// --------------------------------------------------------------------
 	print '<tr class="liste_titre">';
 	// Action column
-	if (getDolGlobalString('MAIN_CHECKBOX_LEFT_COLUMN')) {
+	if ($conf->main_checkbox_left_column) {
 		print '<td class="liste_titre right">';
 		print $form->showFilterButtons();
 		print '</td>';
@@ -1532,7 +1532,7 @@ function show_contacts($conf, $langs, $db, $object, $backtopage = '', $showuserl
 	// --------------------------------------------------------------------
 	print '<tr class="liste_titre">';
 	// Action column
-	if (getDolGlobalString('MAIN_CHECKBOX_LEFT_COLUMN')) {
+	if ($conf->main_checkbox_left_column) {
 		print getTitleFieldOfList($selectedfields, 0, $_SERVER["PHP_SELF"], '', '', '', '', $sortfield, $sortorder, 'maxwidthsearch center ')."\n";
 	}
 	foreach ($contactstatic->fields as $key => $val) {
@@ -1620,7 +1620,7 @@ function show_contacts($conf, $langs, $db, $object, $backtopage = '', $showuserl
 			print '<tr class="oddeven">';
 
 			// Actions
-			if (getDolGlobalString('MAIN_CHECKBOX_LEFT_COLUMN')) {
+			if ($conf->main_checkbox_left_column) {
 				print '<td class="nowrap center">';
 
 				// Add to agenda
@@ -2246,7 +2246,7 @@ function show_actions_done($conf, $langs, $db, $filterobj, $objcon = null, $nopr
 		$out .= '<tr class="liste_titre">';
 
 		// Action column
-		if (getDolGlobalString('MAIN_CHECKBOX_LEFT_COLUMN')) {
+		if ($conf->main_checkbox_left_column) {
 			$out .= '<th class="liste_titre width50 middle">';
 			$searchpicto = $form->showFilterAndCheckAddButtons($massactionbutton ? 1 : 0, 'checkforselect', 1);
 			$out .= $searchpicto;
@@ -2285,7 +2285,7 @@ function show_actions_done($conf, $langs, $db, $filterobj, $objcon = null, $nopr
 
 		$out .= '<tr class="liste_titre">';
 		// Action column
-		if (getDolGlobalString('MAIN_CHECKBOX_LEFT_COLUMN')) {
+		if ($conf->main_checkbox_left_column) {
 			$out .= getTitleFieldOfList('', 0, $_SERVER["PHP_SELF"], '', '', $param, '', $sortfield, $sortorder, 'maxwidthsearch ');
 		}
 		if ($donetodo && $filterobj !== null) {
@@ -2338,7 +2338,7 @@ function show_actions_done($conf, $langs, $db, $filterobj, $objcon = null, $nopr
 			$out .= '<tr class="oddeven">';
 
 			// Action column
-			if (getDolGlobalString('MAIN_CHECKBOX_LEFT_COLUMN')) {
+			if ($conf->main_checkbox_left_column) {
 				$out .= '<td></td>';
 			}
 

@@ -516,7 +516,7 @@ if ($resql) {
 	print '<table class="noborder centpercent">';
 	print '<tr class="liste_titre">';
 	// Action column
-	if (getDolGlobalString('MAIN_CHECKBOX_LEFT_COLUMN')) {
+	if ($conf->main_checkbox_left_column) {
 		if ($massactionbutton || $massaction) { // If we are in select mode (massactionbutton defined) or if we have already selected and sent an action ($massaction) defined
 			print '<td align="center">'.$form->showCheckAddButtons('checkforselect', 1).'</td>';
 		}
@@ -585,7 +585,7 @@ if ($resql) {
 			print '<tr class="oddeven">';
 
 			// Action column
-			if (getDolGlobalString('MAIN_CHECKBOX_LEFT_COLUMN')) {
+			if ($conf->main_checkbox_left_column) {
 				if ($massactionbutton || $massaction) { // If we are in select mode (massactionbutton defined) or if we have already selected and sent an action ($massaction) defined
 					print '<td class="nowrap center">';
 					$selected = 0;

@@ -375,7 +375,7 @@ if ($result) {
 	print '<tr class="liste_titre">';
 
 	// Action column
-	if (getDolGlobalString('MAIN_CHECKBOX_LEFT_COLUMN')) {
+	if ($conf->main_checkbox_left_column) {
 		print '<td class="liste_titre maxwidthsearch center">';
 		$searchpicto = $form->showFilterAndCheckAddButtons(0);
 		print $searchpicto;
@@ -433,7 +433,7 @@ if ($result) {
 
 	print '<tr class="liste_titre">';
 	// Action column
-	if (getDolGlobalString('MAIN_CHECKBOX_LEFT_COLUMN')) {
+	if ($conf->main_checkbox_left_column) {
 		print_liste_field_titre('');
 	}
 	print_liste_field_titre("ID", $_SERVER["PHP_SELF"], "e.rowid", "", $param, '', $sortfield, $sortorder);
@@ -458,7 +458,7 @@ if ($result) {
 		print '<tr class="oddeven">';
 
 		// Action column
-		if (getDolGlobalString('MAIN_CHECKBOX_LEFT_COLUMN')) {
+		if ($conf->main_checkbox_left_column) {
 			print '<td class="center">';
 			$htmltext = '<b>'.$langs->trans("UserAgent").'</b>: '.($obj->user_agent ? dol_string_nohtmltag($obj->user_agent) : $langs->trans("Unknown"));
 			$htmltext .= '<br><b>'.$langs->trans("SuffixSessionName").' (DOLSESSID_...)</b>: '.($obj->prefix_session ? dol_string_nohtmltag($obj->prefix_session) : $langs->trans("Unknown"));

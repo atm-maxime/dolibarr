@@ -77,7 +77,7 @@ print '<div class="div-table-responsive">';
 print '<table summary="listofattributes" class="noborder centpercent small">';
 
 print '<tr class="liste_titre">';
-if (getDolGlobalString('MAIN_CHECKBOX_LEFT_COLUMN')) {
+if ($conf->main_checkbox_left_column) {
 	print '<td width="80">&nbsp;</td>';
 }
 print '<td class="left">'.$langs->trans("Position");
@@ -123,7 +123,7 @@ if (isset($extrafields->attributes[$elementtype]['type']) && is_array($extrafiel
 
 		print '<tr class="oddeven">';
 		// Actions
-		if (getDolGlobalString('MAIN_CHECKBOX_LEFT_COLUMN')) {
+		if ($conf->main_checkbox_left_column) {
 			print '<td class="center nowraponall">';
 			print '<a class="editfielda" href="'.$_SERVER["PHP_SELF"].'?action=edit&token='.newToken().'&attrname='.urlencode($key).'#formeditextrafield">'.img_edit().'</a>';
 			print '&nbsp; <a class="paddingleft" href="'.$_SERVER["PHP_SELF"].'?action=delete&token='.newToken().'&attrname='.urlencode($key).'">'.img_delete().'</a>';

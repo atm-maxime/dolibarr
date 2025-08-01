@@ -312,7 +312,7 @@ if ($socid > 0) {
 		// --------------------------------------------------------------------
 		print '<tr class="liste_titre liste_titre_filter">';
 		// Action column
-		if (getDolGlobalString('MAIN_CHECKBOX_LEFT_COLUMN')) {
+		if ($conf->main_checkbox_left_column) {
 			print '<th class="liste_titre center maxwidthsearch">';
 			$searchpicto = $form->showFilterButtons('left');
 			print $searchpicto;
@@ -373,7 +373,7 @@ if ($socid > 0) {
 
 		print '<tr class="liste_titre">';
 		// Action column
-		if (getDolGlobalString('MAIN_CHECKBOX_LEFT_COLUMN')) {
+		if ($conf->main_checkbox_left_column) {
 			print_liste_field_titre($selectedfields, $_SERVER["PHP_SELF"], "", '', $param, '', $sortfield, $sortorder, 'maxwidthsearch center ');
 		}
 		print_liste_field_titre("Invoice", $_SERVER["PHP_SELF"], "f.ref", "", $param, '', $sortfield, $sortorder);
@@ -412,7 +412,7 @@ if ($socid > 0) {
 
 				print '<tr class="oddeven">';
 				// Action column
-				if (getDolGlobalString('MAIN_CHECKBOX_LEFT_COLUMN')) {
+				if ($conf->main_checkbox_left_column) {
 					print '<td class="nowrap center">';
 					print '</td>';
 				}
@@ -461,7 +461,7 @@ if ($socid > 0) {
 		// Total
 		print '<tr class="liste_total">';
 		$colspan = 2;
-		if (getDolGlobalString('MAIN_CHECKBOX_LEFT_COLUMN')) {
+		if ($conf->main_checkbox_left_column) {
 			$colspan++; // add action column
 		}
 		print '<td colspan="'.$colspan.'">'.$langs->trans('TotalMargin')."</td>";

@@ -5538,7 +5538,7 @@ if ($mode == 'replacesite' || $massaction == 'replace') {
 			print '<table class="noborder centpercent">';
 			print '<tr class="liste_titre">';
 			// Action column
-			if (getDolGlobalString('MAIN_CHECKBOX_LEFT_COLUMN')) {
+			if ($conf->main_checkbox_left_column) {
 				print getTitleFieldOfList($selectedfields, 0, $_SERVER["PHP_SELF"], '', '', '', '', $sortfield, $sortorder, 'center maxwidthsearch ')."\n";
 			}
 			print getTitleFieldOfList("Type", 0, $_SERVER['PHP_SELF'], 'type_container', '', $param, '', $sortfield, $sortorder, '')."\n";
@@ -5576,7 +5576,7 @@ if ($mode == 'replacesite' || $massaction == 'replace') {
 					print '<tr>';
 
 					// Action column
-					if (getDolGlobalString('MAIN_CHECKBOX_LEFT_COLUMN')) {
+					if ($conf->main_checkbox_left_column) {
 						print '<td class="nowrap center">';
 
 						print '<!-- Status of page -->'."\n";
@@ -5721,7 +5721,7 @@ if ($mode == 'replacesite' || $massaction == 'replace') {
 					print '<tr>';
 
 					// Action column
-					if (getDolGlobalString('MAIN_CHECKBOX_LEFT_COLUMN')) {
+					if ($conf->main_checkbox_left_column) {
 						print '<td class="nowrap center">';
 						print '</td>';
 					}
@@ -5794,7 +5794,7 @@ if ($mode == 'replacesite' || $massaction == 'replace') {
 				print '<tr class="lite_titre">';
 
 				// Action column
-				if (getDolGlobalString('MAIN_CHECKBOX_LEFT_COLUMN')) {
+				if ($conf->main_checkbox_left_column) {
 					print '<td class="nowrap center">';
 					print '</td>';
 				}

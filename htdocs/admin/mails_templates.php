@@ -976,7 +976,7 @@ if ($num > $listlimit) {
 // Title line with search boxes
 print '<tr class="liste_titre">';
 // Action column
-if (getDolGlobalString('MAIN_CHECKBOX_LEFT_COLUMN')) {
+if ($conf->main_checkbox_left_column) {
 	print '<td class="liste_titre center" width="64">';
 	$searchpicto = $form->showFilterButtons();
 	print $searchpicto;
@@ -1023,7 +1023,7 @@ print '</tr>';
 // Title of lines
 print '<tr class="liste_titre">';
 // Action column
-if (getDolGlobalString('MAIN_CHECKBOX_LEFT_COLUMN')) {
+if ($conf->main_checkbox_left_column) {
 	print getTitleFieldOfList('');
 }
 foreach ($fieldlist as $field => $value) {
@@ -1122,7 +1122,7 @@ if ($num) {
 				$errors = $hookmanager->errors;
 
 				// Action column
-				if (getDolGlobalString('MAIN_CHECKBOX_LEFT_COLUMN')) {
+				if ($conf->main_checkbox_left_column) {
 					print '<td class="center">';
 					print '<input type="hidden" name="page" value="'.$page.'">';
 					print '<input type="hidden" name="rowid" value="'.$rowid.'">';
@@ -1256,7 +1256,7 @@ if ($num) {
 				print '<tr class="oddeven" id="rowid-'.$obj->rowid.'">';
 
 				// Action column - Modify link / Delete link
-				if (getDolGlobalString('MAIN_CHECKBOX_LEFT_COLUMN')) {
+				if ($conf->main_checkbox_left_column) {
 					print '<td class="center nowraponall" width="64">';
 					if ($canbemodified) {
 						print '<a class="reposition editfielda" href="'.$url.'&action=edit&token='.newToken().'">'.img_edit().'</a>';

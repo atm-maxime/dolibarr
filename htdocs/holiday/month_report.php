@@ -252,7 +252,7 @@ print '<table class="tagtable nobottomiftotal liste">';
 print '<tr class="liste_titre_filter">';
 
 // Action column
-if (getDolGlobalString('MAIN_CHECKBOX_LEFT_COLUMN')) {
+if ($conf->main_checkbox_left_column) {
 	print '<th class="wrapcolumntitle center maxwidthsearch liste_titre">';
 	$searchpicto = $form->showFilterButtons('left');
 	print $searchpicto;
@@ -323,7 +323,7 @@ print '</tr>';
 
 print '<tr class="liste_titre">';
 // Action column
-if (getDolGlobalString('MAIN_CHECKBOX_LEFT_COLUMN')) {
+if ($conf->main_checkbox_left_column) {
 	print getTitleFieldOfList($selectedfields, 0, $_SERVER["PHP_SELF"], '', '', '', '', $sortfield, $sortorder, 'center maxwidthsearch ')."\n";
 }
 if (!empty($arrayfields['cp.ref']['checked'])) {
@@ -426,7 +426,7 @@ if ($num == 0) {
 
 		print '<tr class="oddeven">';
 		// Action column
-		if (getDolGlobalString('MAIN_CHECKBOX_LEFT_COLUMN')) {
+		if ($conf->main_checkbox_left_column) {
 			print '<td></td>';
 		}
 

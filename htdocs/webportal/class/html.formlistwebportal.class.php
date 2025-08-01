@@ -488,7 +488,7 @@ class FormListWebPortal
 		// --------------------------------------------------------------------
 		$html .= '<tr role="search-row">';
 		// Action column
-		// if (getDolGlobalString('MAIN_CHECKBOX_LEFT_COLUMN')) {
+		// if ($conf->main_checkbox_left_column) {
 		$html .= '<td data-col="row-checkbox" >';
 		$html .= '	<button class="btn-filter-icon btn-search-filters-icon" type="submit" name="button_search_x" value="x" aria-label="'.dol_escape_htmltag($langs->trans('Search')).'" ></button>';
 		$html .= '	<button class="btn-filter-icon btn-remove-search-filters-icon" type="submit" name="button_removefilter_x" value="x" aria-label="'.dol_escape_htmltag($langs->trans('RemoveSearchFilters')).'"></button>';
@@ -545,7 +545,7 @@ class FormListWebPortal
 		// --------------------------------------------------------------------
 		$html .= '<tr>';
 		// Action column
-		// if (getDolGlobalString('MAIN_CHECKBOX_LEFT_COLUMN')) {
+		// if ($conf->main_checkbox_left_column) {
 		$html .= '<th  data-col="row-checkbox"  ></th>';
 		$totalarray['nbfield']++;
 		// }
@@ -650,7 +650,7 @@ class FormListWebPortal
 
 			// Show line of result
 			$html .= '<tr data-rowid="' . $object->id . '">';
-			// if (getDolGlobalString('MAIN_CHECKBOX_LEFT_COLUMN')) {
+			// if ($conf->main_checkbox_left_column) {
 			$html .= '<td class="nowraponall">';
 			$html .= '</td>';
 			if (!$i) {
