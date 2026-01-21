@@ -10808,6 +10808,47 @@ function getCommonSubstitutionArray($outputlangs, $onlykey = 0, $exclude = null,
 		$substitutionarray['__[AnyConstantKey]__'] = $outputlangs->trans('ValueOfConstantKey');
 	}
 
+	// Add all contacts linked to the object in the substitutions
+	if (is_object($object)) {
+		foreach (['external', 'internal'] as $contactsource) {
+			$arrayidcontact = $object->liste_contact(-1, $contactsource);
+			if (count($arrayidcontact) > 0) {
+				foreach ($arrayidcontact as $item) {
+					$contact = new Contact($db);
+					$contact->fetch($item['id']);
+					$prefix = '__CONTACT_' . strtoupper($contactsource). '_' . strtoupper($item['code']);
+					$substitutionarray = array_merge($substitutionarray, array(
+						$prefix.'_FULLNAME__' => $contact->getFullName($outputlangs, 1),
+						$prefix.'_LASTNAME__' => $contact->lastname,
+						$prefix.'_FIRSTNAME__' => $contact->firstname,
+						$prefix.'_ADDRESS__' => $contact->address,
+						$prefix.'_ZIP__' => $contact->zip,
+						$prefix.'_TOWN__' => $contact->town,
+						$prefix.'_STATE_ID__' => $contact->state_id,
+						$prefix.'_STATE_CODE__' => $contact->state_code,
+						$prefix.'_STATE__' => $contact->state,
+						$prefix.'_COUNTRY_ID__' => $contact->country_id,
+						$prefix.'_COUNTRY_CODE__' => $contact->country_code,
+						$prefix.'_COUNTRY__' => $contact->country,
+						$prefix.'_POSTE__' => $contact->poste,
+						$prefix.'_SOCID__' => $contact->socid,
+						$prefix.'_STATUT__' => $contact->status,
+						$prefix.'_EMAIL__' => $contact->email,
+						$prefix.'_PHONE_PRO__' => $contact->phone_pro,
+						$prefix.'_PHONE_PERSO__' => $contact->phone_perso,
+						$prefix.'_PHONE_MOBILE__' => $contact->phone_mobile,
+						$prefix.'_FAX__' => $contact->fax,
+						$prefix.'_BIRTHDAY__' => (isset($contact->birthday) ? dol_print_date($contact->birthday, 'day', false, $outputlangs) : null),
+						$prefix.'_DEFAULT_LANG__' => $contact->default_lang,
+						$prefix.'_NOTE_PUBLIC__' => $contact->note_public,
+						$prefix.'_NOTE_PRIVATE__' => $contact->note_private,
+						$prefix.'_CIVILITY__' => $contact->civility,
+					));
+				}
+			}
+		}
+	}
+
 	// Note: The lazyload variables are replaced only during the call by make_substitutions, and only if necessary
 
 	return $substitutionarray;
