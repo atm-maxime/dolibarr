@@ -4,7 +4,7 @@
  * Copyright (C) 2018-2025  Frédéric France         <frederic.france@free.fr>
  * Copyright (C) 2024		William Mead			<william.mead@manchenumerique.fr>
  * Copyright (C) 2024-2025	MDW						<mdeweerd@users.noreply.github.com>
-  * Copyright (C) 2026		Anthony Berton			<anthony.berton@bb2a.fr>
+ * Copyright (C) 2026		Anthony Berton			<anthony.berton@bb2a.fr>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -41,26 +41,25 @@ require_once DOL_DOCUMENT_ROOT.'/resource/class/dolresource.class.php';
 $langs->loadLangs(array("resource", "companies", "other"));
 
 // Get parameters
-$id				= GETPOSTINT('id');
-$action			= GETPOST('action', 'alpha');
-$massaction		= GETPOST('massaction', 'alpha'); // The bulk action (combo box choice into lists)
-$confirm		= GETPOST('confirm', 'alpha');
-$toselect		= GETPOST('toselect', 'array:int');
-$contextpage	= GETPOST('contextpage', 'aZ') ? GETPOST('contextpage', 'aZ') : 'interventionlist';
+$id          = GETPOSTINT('id');
+$action      = GETPOST('action', 'alpha');
+$massaction  = GETPOST('massaction', 'alpha');
+$confirm     = GETPOST('confirm', 'alpha');
+$toselect    = GETPOST('toselect', 'array:int');
+$contextpage = GETPOST('contextpage', 'aZ') ? GETPOST('contextpage', 'aZ') : 'resourcelist';
+$optioncss   = GETPOST('optioncss', 'alpha');
 
-$lineid			= GETPOSTINT('lineid');
-$element		= GETPOST('element', 'alpha');
-$element_id		= GETPOSTINT('element_id');
-$resource_id	= GETPOSTINT('resource_id');
+$sortorder = GETPOST('sortorder', 'aZ09comma');
+$sortfield = GETPOST('sortfield', 'aZ09comma');
 
-$sortorder		= GETPOST('sortorder', 'aZ09comma');
-$sortfield		= GETPOST('sortfield', 'aZ09comma');
-$optioncss		= GETPOST('optioncss', 'alpha');
+if (empty($sortorder)) {
+	$sortorder = "ASC";
+}
+if (empty($sortfield)) {
+	$sortfield = "t.ref";
+}
 
-// Initialize context for list
-$contextpage 	= GETPOST('contextpage', 'aZ') ? GETPOST('contextpage', 'aZ') : 'resourcelist';
-
-// Initialize a technical objects
+// Initialize technical objects
 $object = new Dolresource($db);
 $extrafields = new ExtraFields($db);
 
@@ -70,133 +69,82 @@ $search_array_options = $extrafields->getOptionalsFromPost($object->table_elemen
 if (!is_array($search_array_options)) {
 	$search_array_options = array();
 }
-$search_all          = trim(GETPOST('search_all', 'alphanohtml'));
-$search_ref			= GETPOST("search_ref", 'alpha');
-$search_type		= GETPOST("search_type", 'alpha');
-$search_address		= GETPOST("search_address", 'alpha');
-$search_zip			= GETPOST("search_zip", 'alpha');
-$search_town		= GETPOST("search_town", 'alpha');
-$search_state		= GETPOST("search_state", 'alpha');
-$search_country		= GETPOST("search_country", 'alpha');
-$search_phone		= GETPOST("search_phone", 'alpha');
-$search_email		= GETPOST("search_email", 'alpha');
-$search_max_users	= GETPOST("search_max_users", 'alpha');
-$search_url			= GETPOST("search_url", 'alpha');
 
-$filter = array();
+$search_all      = trim(GETPOST('search_all', 'alphanohtml'));
+$search_ref      = GETPOST("search_ref", 'alpha');
+$search_type     = GETPOST("search_type", 'alpha');
+$search_address  = GETPOST("search_address", 'alpha');
+$search_zip      = GETPOST("search_zip", 'alpha');
+$search_town     = GETPOST("search_town", 'alpha');
+$search_state    = GETPOST("search_state", 'alpha');
+$search_country  = GETPOST("search_country", 'alpha');
+$search_phone    = GETPOST("search_phone", 'alpha');
+$search_email    = GETPOST("search_email", 'alpha');
+$search_max_users = GETPOST("search_max_users", 'alpha');
+$search_url      = GETPOST("search_url", 'alpha');
 
 $hookmanager->initHooks(array('resourcelist'));
 
-if (empty($sortorder)) {
-	$sortorder = "ASC";
-}
-if (empty($sortfield)) {
-	$sortfield = "t.ref";
-}
-
-$search_all = trim(GETPOST('search_all', 'alphanohtml'));
-
 // Load variable for pagination
-$limit	= GETPOSTINT('limit') ? GETPOSTINT('limit') : $conf->liste_limit;
-
-$page	= GETPOSTISSET('pageplusone') ? (GETPOSTINT('pageplusone') - 1) : GETPOSTINT("page");
+$limit  = GETPOSTINT('limit') ? GETPOSTINT('limit') : $conf->liste_limit;
+$page   = GETPOSTISSET('pageplusone') ? (GETPOSTINT('pageplusone') - 1) : GETPOSTINT("page");
 if (empty($page) || $page == -1) {
 	$page = 0;
-}     // If $page is not defined, or '' or -1
-$offset = $limit * $page;
+}
+$offset   = $limit * $page;
 $pageprev = $page - 1;
 $pagenext = $page + 1;
 
-// List of fields to search into when doing a "search in all"
+// Fields to search into when doing a "search in all"
 $fieldstosearchall = array(
-	't.ref' => 'Ref',
+	't.ref'         => 'Ref',
 	't.description' => 'Description',
 );
 
+// Definition of array of fields for columns
+// Note: fields coming from JOINs (ty.label, st.nom, co.label) cannot be derived from
+// $object->fields directly, so we keep them here with custom SQL aliases.
 $arrayfields = array(
-	't.ref' => array(
-		'label' => $langs->trans("Ref"),
-		'checked' => '1',
-		'position' => 1
-	),
-	'ty.label' => array(
-		'label' => $langs->trans("Type"),
-		'checked' => '1',
-		'position' => 2
-	),
-	't.address' => array(
-		'label' => $langs->trans("Address"),
-		'checked' => '0',
-		'position' => 3
-	),
-	't.zip' => array(
-		'label' => $langs->trans("Zip"),
-		'checked' => '0',
-		'position' => 4
-	),
-	't.town' => array(
-		'label' => $langs->trans("Town"),
-		'checked' => '1',
-		'position' => 5
-	),
-	'st.nom' => array(
-		'label' => $langs->trans("State"),
-		'checked' => '0',
-		'position' => 6
-	),
-	'co.label' => array(
-		'label' => $langs->trans("Country"),
-		'checked' => '1',
-		'position' => 7
-	),
-	't.phone' => array(
-		'label' => $langs->trans("Phone"),
-		'checked' => '0',
-		'position' => 8
-	),
-	't.email' => array(
-		'label' => $langs->trans("Email"),
-		'checked' => '0',
-		'position' => 9
-	),
-	't.max_users' => array(
-		'label' => $langs->trans("MaxUsersLabel"),
-		'checked' => '1',
-		'position' => 10
-	),
-	't.url' => array(
-		'label' => $langs->trans("URL"),
-		'checked' => '0',
-		'position' => 11
-	),
+	't.ref'       => array('label' => $langs->trans("Ref"),           'checked' => '1', 'position' => 1),
+	'ty.label'    => array('label' => $langs->trans("Type"),          'checked' => '1', 'position' => 2),
+	't.address'   => array('label' => $langs->trans("Address"),       'checked' => '0', 'position' => 3),
+	't.zip'       => array('label' => $langs->trans("Zip"),           'checked' => '0', 'position' => 4),
+	't.town'      => array('label' => $langs->trans("Town"),          'checked' => '1', 'position' => 5),
+	'st.nom'      => array('label' => $langs->trans("State"),         'checked' => '0', 'position' => 6),
+	'co.label'    => array('label' => $langs->trans("Country"),       'checked' => '1', 'position' => 7),
+	't.phone'     => array('label' => $langs->trans("Phone"),         'checked' => '0', 'position' => 8),
+	't.email'     => array('label' => $langs->trans("Email"),         'checked' => '0', 'position' => 9),
+	't.max_users' => array('label' => $langs->trans("MaxUsersLabel"), 'checked' => '1', 'position' => 10),
+	't.url'       => array('label' => $langs->trans("URL"),           'checked' => '0', 'position' => 11),
 );
+
 // Extra fields
 include DOL_DOCUMENT_ROOT.'/core/tpl/extrafields_list_array_fields.tpl.php';
 
 $object->fields = dol_sort_array($object->fields, 'position');
-$arrayfields = dol_sort_array($arrayfields, 'position');
+$arrayfields    = dol_sort_array($arrayfields, 'position');
 
 include DOL_DOCUMENT_ROOT.'/core/actions_changeselectedfields.inc.php';
 
-// Do we click on purge search criteria ?
-if (GETPOST('button_removefilter_x', 'alpha') || GETPOST('button_removefilter.x', 'alpha') || GETPOST('button_removefilter', 'alpha')) { // Both test are required to be compatible with all browsers
-	$search_ref = "";
-	$search_type = "";
-	$search_address = "";
-	$search_zip = "";
-	$search_town = "";
-	$search_state = "";
-	$search_country = "";
-	$search_phone = "";
-	$search_email = "";
+// Purge search criteria
+if (GETPOST('button_removefilter_x', 'alpha') || GETPOST('button_removefilter.x', 'alpha') || GETPOST('button_removefilter', 'alpha')) {
+	$search_ref       = "";
+	$search_type      = "";
+	$search_address   = "";
+	$search_zip       = "";
+	$search_town      = "";
+	$search_state     = "";
+	$search_country   = "";
+	$search_phone     = "";
+	$search_email     = "";
 	$search_max_users = "";
-	$search_url = "";
-	$toselect = array();
+	$search_url       = "";
+	$toselect         = array();
 	$search_array_options = array();
 }
 
-$permissiontoread = $user->hasRight('resource', 'read');
-$permissiontoadd = $user->hasRight('resource', 'write');
+$permissiontoread   = $user->hasRight('resource', 'read');
+$permissiontoadd    = $user->hasRight('resource', 'write');
 $permissiontodelete = $user->hasRight('resource', 'delete');
 if (!$permissiontoread) {
 	accessforbidden();
@@ -205,15 +153,16 @@ if (!$permissiontoread) {
 // Mass actions
 $objectclass = 'Dolresource';
 $objectlabel = 'Resources';
-$uploaddir = $conf->resource->dir_output;
+$uploaddir   = $conf->resource->dir_output;
 include DOL_DOCUMENT_ROOT.'/core/actions_massactions.inc.php';
+
 
 /*
  * Actions
  */
 
 if (GETPOST('cancel', 'alpha')) {
-	$action = 'list';
+	$action     = 'list';
 	$massaction = '';
 }
 if (!GETPOST('confirmmassaction', 'alpha') && $massaction != 'presend' && $massaction != 'confirm_presend') {
@@ -221,26 +170,28 @@ if (!GETPOST('confirmmassaction', 'alpha') && $massaction != 'presend' && $massa
 }
 
 $parameters = array();
-$reshook = $hookmanager->executeHooks('doActions', $parameters, $object, $action); // Note that $action and $object may have been modified by some hooks
+$reshook = $hookmanager->executeHooks('doActions', $parameters, $object, $action);
 if ($reshook < 0) {
 	setEventMessages($hookmanager->error, $hookmanager->errors, 'errors');
 }
+
 
 /*
  * View
  */
 
-$form = new Form($db);
+$form       = new Form($db);
 $objectstatic = new Dolresource($db);
 
 $help_url = '';
-$title = $langs->trans('Resources');
-$morejs = array();
-$morecss = array();
+$title    = $langs->trans('Resources');
+$morejs   = array();
+$morecss  = array();
 
-$varpage = empty($contextpage) ? $_SERVER["PHP_SELF"] : $contextpage;
-$selectedfields = $form->multiSelectArrayWithCheckbox('selectedfields', $arrayfields, $varpage); // This also change content of $arrayfields
+$varpage       = empty($contextpage) ? $_SERVER["PHP_SELF"] : $contextpage;
+$selectedfields = $form->multiSelectArrayWithCheckbox('selectedfields', $arrayfields, $varpage);
 
+// Build the SQL query
 $sql = "SELECT";
 $sql .= " t.rowid,";
 $sql .= " t.entity,";
@@ -257,10 +208,10 @@ $sql .= " t.max_users,";
 $sql .= " t.url,";
 $sql .= " t.fk_code_type_resource,";
 $sql .= " t.tms as date_modification,";
-$sql .= " t.datec as date_creation, ";
-$sql .= " ty.label as type_label, ";
-$sql .= " st.nom as state_label, ";
-$sql .= " co.label as country_label ";
+$sql .= " t.datec as date_creation,";
+$sql .= " ty.label as type_label,";
+$sql .= " st.nom as state_label,";
+$sql .= " co.label as country_label";
 // Add fields from extrafields
 if (!empty($extrafields->attributes[$object->table_element]['label'])) {
 	foreach ($extrafields->attributes[$object->table_element]['label'] as $key => $val) {
@@ -269,10 +220,10 @@ if (!empty($extrafields->attributes[$object->table_element]['label'])) {
 }
 // Add fields from hooks
 $parameters = array();
-$reshook = $hookmanager->executeHooks('printFieldListSelect', $parameters, $object, $action); // Note that $action and $object may have been modified by hook
+$reshook = $hookmanager->executeHooks('printFieldListSelect', $parameters, $object, $action);
 $sql .= $hookmanager->resPrint;
 
-$sqlfields = $sql; // $sql fields to remove for count total
+$sqlfields = $sql; // Save for count query
 
 $sql .= " FROM ".MAIN_DB_PREFIX."resource as t";
 $sql .= " LEFT JOIN ".MAIN_DB_PREFIX."c_type_resource as ty ON ty.code=t.fk_code_type_resource";
@@ -281,15 +232,13 @@ $sql .= " LEFT JOIN ".MAIN_DB_PREFIX."c_country as co ON co.rowid=t.fk_country";
 if (isset($extrafields->attributes[$object->table_element]['label']) && is_array($extrafields->attributes[$object->table_element]['label']) && count($extrafields->attributes[$object->table_element]['label'])) {
 	$sql .= " LEFT JOIN ".MAIN_DB_PREFIX.$object->table_element."_extrafields as ef on (t.rowid = ef.fk_object)";
 }
-
-// Add table from hooks
+// Add tables from hooks
 $parameters = array();
-$reshook = $hookmanager->executeHooks('printFieldListFrom', $parameters, $object, $action); // Note that $action and $object may have been modified by hook
+$reshook = $hookmanager->executeHooks('printFieldListFrom', $parameters, $object, $action);
 $sql .= $hookmanager->resPrint;
 
 $sql .= " WHERE t.entity IN (".getEntity('resource').")";
-// Search all
-if (!empty($search_all)) {
+if ($search_all) {
 	$sql .= natural_search(array_keys($fieldstosearchall), $search_all);
 }
 if ($search_ref) {
@@ -330,13 +279,12 @@ if ($search_url) {
 include DOL_DOCUMENT_ROOT.'/core/tpl/extrafields_list_search_sql.tpl.php';
 // Add where from hooks
 $parameters = array();
-$reshook = $hookmanager->executeHooks('printFieldListWhere', $parameters, $object, $action); // Note that $action and $object may have been modified by hook
+$reshook = $hookmanager->executeHooks('printFieldListWhere', $parameters, $object, $action);
 $sql .= $hookmanager->resPrint;
 
-// Count total nb of records
+// Count total records
 $nbtotalofrecords = '';
 if (!getDolGlobalInt('MAIN_DISABLE_FULL_SCANLIST')) {
-	/* The fast and low memory method to get and count full list converts the sql into a sql count */
 	$sqlforcount = preg_replace('/^'.preg_quote($sqlfields, '/').'/', 'SELECT COUNT(*) as nbtotalofrecords', $sql);
 	$sqlforcount = preg_replace('/GROUP BY .*$/', '', $sqlforcount);
 	$resql = $db->query($sqlforcount);
@@ -346,9 +294,8 @@ if (!getDolGlobalInt('MAIN_DISABLE_FULL_SCANLIST')) {
 	} else {
 		dol_print_error($db);
 	}
-
-	if (($page * $limit) > (int) $nbtotalofrecords) {	// if total resultset is smaller than the paging size (filtering), goto and load page 0
-		$page = 0;
+	if (($page * $limit) > (int) $nbtotalofrecords) {
+		$page   = 0;
 		$offset = 0;
 	}
 	$db->free($resql);
@@ -371,14 +318,12 @@ $num = $db->num_rows($resql);
 // Direct jump if only one record found
 if ($num == 1 && getDolGlobalString('MAIN_SEARCH_DIRECT_OPEN_IF_ONLY_ONE') && $search_all && !$page) {
 	$obj = $db->fetch_object($resql);
-	$id = $obj->rowid;
-	header("Location: ".dol_buildpath('/resource/card.php', 1).'?id='.$id);
+	header("Location: ".dol_buildpath('/resource/card.php', 1).'?id='.$obj->rowid);
 	exit;
 }
 
 // Output page
-
-llxHeader('', $title, $help_url, '', 0, 0, $morejs, $morecss, '', 'mod-resource page-list bodyforlist');	// Can use also classforhorizontalscrolloftabs instead of bodyforlist for no horizontal scroll
+llxHeader('', $title, $help_url, '', 0, 0, $morejs, $morecss, '', 'mod-resource page-list bodyforlist');
 
 $arrayofselected = is_array($toselect) ? $toselect : array();
 
@@ -426,9 +371,9 @@ if ($search_url != '') {
 // Add $param from extra fields
 include DOL_DOCUMENT_ROOT.'/core/tpl/extrafields_list_search_param.tpl.php';
 
-// List of mass actions available
+// Mass actions available
 $arrayofmassactions = array();
-if (!empty($permissiontodelete)) {
+if ($permissiontodelete) {
 	$arrayofmassactions['predelete'] = img_picto('', 'delete', 'class="pictofixedwidth"').$langs->trans("Delete");
 }
 if (GETPOSTINT('nomassaction') || in_array($massaction, array('presend', 'predelete'))) {
@@ -436,8 +381,11 @@ if (GETPOSTINT('nomassaction') || in_array($massaction, array('presend', 'predel
 }
 $massactionbutton = $form->selectMassAction('', $arrayofmassactions);
 
-$varpage = empty($contextpage) ? $_SERVER["PHP_SELF"] : $contextpage;
+$varpage       = empty($contextpage) ? $_SERVER["PHP_SELF"] : $contextpage;
 $selectedfields = $form->multiSelectArrayWithCheckbox('selectedfields', $arrayfields, $varpage, $conf->main_checkbox_left_column);
+$selectedfields .= (count($arrayofmassactions) ? $form->showCheckAddButtons('checkforselect', 1) : '');
+
+$newcardbutton = dolGetButtonTitle($langs->trans('NewResource'), '', 'fa fa-plus-circle', DOL_URL_ROOT.'/resource/card.php?action=create', '', $permissiontoadd);
 
 print '<form method="POST" id="searchFormList" action="'.dolBuildUrl($_SERVER["PHP_SELF"]).'">';
 if ($optioncss != '') {
@@ -451,15 +399,9 @@ print '<input type="hidden" name="sortorder" value="'.$sortorder.'">';
 print '<input type="hidden" name="page" value="'.$page.'">';
 print '<input type="hidden" name="contextpage" value="'.$contextpage.'">';
 
-$newcardbutton = '';
-$url = DOL_URL_ROOT.'/resource/card.php?action=create';
-
-$newcardbutton = dolGetButtonTitle($langs->trans('NewResource'), '', 'fa fa-plus-circle', $url, '', $permissiontoadd);
-
 print_barre_liste($title, $page, $_SERVER['PHP_SELF'], $param, $sortfield, $sortorder, $massactionbutton, $num, $nbtotalofrecords, 'object_'.$object->picto, 0, $newcardbutton, '', $limit, 0, 0, 1);
 
 $objecttmp = new Dolresource($db);
-$trackid = 'int'.$object->id;
 include DOL_DOCUMENT_ROOT.'/core/tpl/massactions_pre.tpl.php';
 
 if ($search_all) {
@@ -472,52 +414,33 @@ if ($search_all) {
 	print '<div class="divsearchfieldfilter">'.$langs->trans("FilterOnInto", $search_all).implode(', ', $fieldstosearchall).'</div>';
 }
 
-$varpage = empty($contextpage) ? $_SERVER["PHP_SELF"] : $contextpage;
-$selectedfields = ($form->multiSelectArrayWithCheckbox('selectedfields', $arrayfields, $varpage, $conf->main_checkbox_left_column)); // This also change content of $arrayfields
-$selectedfields .= (count($arrayofmassactions) ? $form->showCheckAddButtons('checkforselect', 1) : '');
-
 print '<div class="div-table-responsive">';
 print '<table class="tagtable liste">'."\n";
 
-// Fields title search
-
+// Filter row
 print '<tr class="liste_titre_filter">';
-// Action column
 if ($conf->main_checkbox_left_column) {
 	print '<td class="liste_titre maxwidthsearch center">';
-	$searchpicto = $form->showFilterButtons('left');
-	print $searchpicto;
+	print $form->showFilterButtons('left');
 	print '</td>';
 }
 if (!empty($arrayfields['t.ref']['checked'])) {
-	print '<td class="liste_titre">';
-	print '<input type="text" class="flat" name="search_ref" value="'.$search_ref.'" size="8">';
-	print '</td>';
+	print '<td class="liste_titre"><input type="text" class="flat" name="search_ref" value="'.dol_escape_htmltag($search_ref).'" size="8"></td>';
 }
 if (!empty($arrayfields['ty.label']['checked'])) {
-	print '<td class="liste_titre">';
-	print '<input type="text" class="flat" name="search_type" value="'.$search_type.'" size="8">';
-	print '</td>';
+	print '<td class="liste_titre"><input type="text" class="flat" name="search_type" value="'.dol_escape_htmltag($search_type).'" size="8"></td>';
 }
 if (!empty($arrayfields['t.address']['checked'])) {
-	print '<td class="liste_titre">';
-	print '<input type="text" class="flat" name="search_address" value="'.$search_address.'" size="8">';
-	print '</td>';
+	print '<td class="liste_titre"><input type="text" class="flat" name="search_address" value="'.dol_escape_htmltag($search_address).'" size="8"></td>';
 }
 if (!empty($arrayfields['t.zip']['checked'])) {
-	print '<td class="liste_titre">';
-	print '<input type="text" class="flat" name="search_zip" value="'.$search_zip.'" size="8">';
-	print '</td>';
+	print '<td class="liste_titre"><input type="text" class="flat" name="search_zip" value="'.dol_escape_htmltag($search_zip).'" size="8"></td>';
 }
 if (!empty($arrayfields['t.town']['checked'])) {
-	print '<td class="liste_titre">';
-	print '<input type="text" class="flat" name="search_town" value="'.$search_town.'" size="8">';
-	print '</td>';
+	print '<td class="liste_titre"><input type="text" class="flat" name="search_town" value="'.dol_escape_htmltag($search_town).'" size="8"></td>';
 }
 if (!empty($arrayfields['st.nom']['checked'])) {
-	print '<td class="liste_titre">';
-	print '<input type="text" class="flat" name="search_state" value="'.$search_state.'" size="8">';
-	print '</td>';
+	print '<td class="liste_titre"><input type="text" class="flat" name="search_state" value="'.dol_escape_htmltag($search_state).'" size="8"></td>';
 }
 if (!empty($arrayfields['co.label']['checked'])) {
 	print '<td class="liste_titre">';
@@ -525,33 +448,23 @@ if (!empty($arrayfields['co.label']['checked'])) {
 	print '</td>';
 }
 if (!empty($arrayfields['t.phone']['checked'])) {
-	print '<td class="liste_titre">';
-	print '<input type="text" class="flat" name="search_phone" value="'.$search_phone.'" size="8">';
-	print '</td>';
+	print '<td class="liste_titre"><input type="text" class="flat" name="search_phone" value="'.dol_escape_htmltag($search_phone).'" size="8"></td>';
 }
 if (!empty($arrayfields['t.email']['checked'])) {
-	print '<td class="liste_titre">';
-	print '<input type="text" class="flat" name="search_email" value="'.$search_email.'" size="8">';
-	print '</td>';
+	print '<td class="liste_titre"><input type="text" class="flat" name="search_email" value="'.dol_escape_htmltag($search_email).'" size="8"></td>';
 }
 if (!empty($arrayfields['t.max_users']['checked'])) {
-	print '<td class="liste_titre">';
-	print '<input type="text" class="flat" name="search_max_users" value="'.$search_max_users.'" size="8">';
-	print '</td>';
+	print '<td class="liste_titre"><input type="text" class="flat" name="search_max_users" value="'.dol_escape_htmltag($search_max_users).'" size="8"></td>';
 }
 if (!empty($arrayfields['t.url']['checked'])) {
-	print '<td class="liste_titre">';
-	print '<input type="text" class="flat" name="search_url" value="'.$search_url.'" size="8">';
-	print '</td>';
+	print '<td class="liste_titre"><input type="text" class="flat" name="search_url" value="'.dol_escape_htmltag($search_url).'" size="8"></td>';
 }
 // Extra fields
 include DOL_DOCUMENT_ROOT.'/core/tpl/extrafields_list_search_input.tpl.php';
 
-// Action column
 if (!$conf->main_checkbox_left_column) {
 	print '<td class="liste_titre center maxwidthsearch">';
-	$searchpicto = $form->showFilterButtons();
-	print $searchpicto;
+	print $form->showFilterButtons();
 	print '</td>';
 }
 print '</tr>'."\n";
@@ -559,15 +472,12 @@ print '</tr>'."\n";
 $totalarray = array();
 $totalarray['nbfield'] = 0;
 
-// Fields title label
-
+// Column title row
 print '<tr class="liste_titre">';
-// Action column
 if ($conf->main_checkbox_left_column) {
 	print_liste_field_titre($selectedfields, $_SERVER["PHP_SELF"], "", '', '', '', $sortfield, $sortorder, 'center maxwidthsearch ');
 }
 if (!empty($arrayfields['t.ref']['checked'])) {
-	// @phan-suppress-next-line PhanTypeInvalidDimOffset
 	print_liste_field_titre($arrayfields['t.ref']['label'], $_SERVER["PHP_SELF"], "t.ref", "", $param, "", $sortfield, $sortorder);
 }
 if (!empty($arrayfields['ty.label']['checked'])) {
@@ -602,14 +512,12 @@ if (!empty($arrayfields['t.url']['checked'])) {
 }
 // Extra fields
 include DOL_DOCUMENT_ROOT.'/core/tpl/extrafields_list_search_title.tpl.php';
-// Action column
 if (!$conf->main_checkbox_left_column) {
 	print_liste_field_titre($selectedfields, $_SERVER["PHP_SELF"], "", '', '', '', $sortfield, $sortorder, 'center maxwidthsearch ');
 }
 print "</tr>\n";
 
-// Loop on record
-
+// Data rows
 $i = 0;
 $savnbfield = $totalarray['nbfield'];
 $totalarray = array();
@@ -617,29 +525,27 @@ $totalarray['nbfield'] = 0;
 $imaxinloop = ($limit ? min($num, $limit) : $num);
 while ($i < $imaxinloop) {
 	$obj = $db->fetch_object($resql);
-	$objectstatic->id = $obj->rowid;
-	$objectstatic->ref = $obj->ref;
+
+	$objectstatic->id        = $obj->rowid;
+	$objectstatic->ref       = $obj->ref;
 	$objectstatic->type_label = $obj->type_label;
-	$objectstatic->address = $obj->address;
-	$objectstatic->zip = $obj->zip;
-	$objectstatic->town = $obj->town;
-	$objectstatic->state = $obj->state_label;
-	$objectstatic->country = $obj->country_label;
-	$objectstatic->phone = $obj->phone;
-	$objectstatic->email = $obj->email;
+	$objectstatic->address   = $obj->address;
+	$objectstatic->zip       = $obj->zip;
+	$objectstatic->town      = $obj->town;
+	$objectstatic->state     = $obj->state_label;
+	$objectstatic->country   = $obj->country_label;
+	$objectstatic->phone     = $obj->phone;
+	$objectstatic->email     = $obj->email;
 	$objectstatic->max_users = $obj->max_users;
-	$objectstatic->url = $obj->url;
+	$objectstatic->url       = $obj->url;
 
 	print '<tr data-rowid="'.$obj->rowid.'" class="oddeven row-with-select">';
 
-	// Action column
+	// Action column (left)
 	if ($conf->main_checkbox_left_column) {
 		print '<td class="nowrap center">';
-		if ($massactionbutton || $massaction) {   // If we are in select mode (massactionbutton defined) or if we have already selected and sent an action ($massaction) defined
-			$selected = 0;
-			if (in_array($obj->rowid, $arrayofselected)) {
-				$selected = 1;
-			}
+		if ($massactionbutton || $massaction) {
+			$selected = in_array($obj->rowid, $arrayofselected) ? 1 : 0;
 			print '<input id="cb'.$obj->rowid.'" class="flat checkforselect" type="checkbox" name="toselect[]" value="'.$obj->rowid.'"'.($selected ? ' checked="checked"' : '').'>';
 		}
 		print '</td>';
@@ -649,92 +555,80 @@ while ($i < $imaxinloop) {
 	}
 
 	if (!empty($arrayfields['t.ref']['checked'])) {
-		print '<td class="tdoverflowmax150">'.$objectstatic->getNomUrl(5).'</td>';
+		print '<td class="tdoverflowmax150">'.$objectstatic->getNomUrl(1).'</td>';
 		if (!$i) {
 			$totalarray['nbfield']++;
 		}
 	}
-
 	if (!empty($arrayfields['ty.label']['checked'])) {
-		print '<td class="tdoverflowmax200">'.$objectstatic->type_label.'</td>';
+		print '<td class="tdoverflowmax200">'.dol_escape_htmltag($objectstatic->type_label).'</td>';
 		if (!$i) {
 			$totalarray['nbfield']++;
 		}
 	}
-
 	if (!empty($arrayfields['t.address']['checked'])) {
-		print '<td>'.$objectstatic->address.'</td>';
+		print '<td>'.dol_escape_htmltag($objectstatic->address).'</td>';
 		if (!$i) {
 			$totalarray['nbfield']++;
 		}
 	}
-
 	if (!empty($arrayfields['t.zip']['checked'])) {
-		print '<td>'.$objectstatic->zip.'</td>';
+		print '<td>'.dol_escape_htmltag($objectstatic->zip).'</td>';
 		if (!$i) {
 			$totalarray['nbfield']++;
 		}
 	}
-
 	if (!empty($arrayfields['t.town']['checked'])) {
-		print '<td>'.$objectstatic->town.'</td>';
+		print '<td>'.dol_escape_htmltag($objectstatic->town).'</td>';
 		if (!$i) {
 			$totalarray['nbfield']++;
 		}
 	}
-
 	if (!empty($arrayfields['st.nom']['checked'])) {
-		print '<td>'.$objectstatic->state.'</td>';
+		print '<td>'.dol_escape_htmltag($objectstatic->state).'</td>';
 		if (!$i) {
 			$totalarray['nbfield']++;
 		}
 	}
-
 	if (!empty($arrayfields['co.label']['checked'])) {
-		print '<td>'.$objectstatic->country.'</td>';
+		print '<td>'.dol_escape_htmltag($objectstatic->country).'</td>';
 		if (!$i) {
 			$totalarray['nbfield']++;
 		}
 	}
-
 	if (!empty($arrayfields['t.phone']['checked'])) {
 		print '<td>'.dol_print_phone($objectstatic->phone, '', 0, 0, 'AC_TEL', " ", 'phone').'</td>';
 		if (!$i) {
 			$totalarray['nbfield']++;
 		}
 	}
-
 	if (!empty($arrayfields['t.email']['checked'])) {
 		print '<td>'.dol_print_email($objectstatic->email, 0, 0, 1, 0, 0, 1).'</td>';
 		if (!$i) {
 			$totalarray['nbfield']++;
 		}
 	}
-
 	if (!empty($arrayfields['t.max_users']['checked'])) {
-		print '<td>'.$objectstatic->max_users.'</td>';
+		print '<td>'.dol_escape_htmltag($objectstatic->max_users > 0 ? $objectstatic->max_users : '').'</td>';
 		if (!$i) {
 			$totalarray['nbfield']++;
 		}
 	}
-
 	if (!empty($arrayfields['t.url']['checked'])) {
 		print '<td>'.dol_print_url($objectstatic->url, '_blank', 32, 1).'</td>';
 		if (!$i) {
 			$totalarray['nbfield']++;
 		}
 	}
+
 	// Extra fields
 	include DOL_DOCUMENT_ROOT.'/core/tpl/extrafields_list_print_fields.tpl.php';
 
-	// Action column
+	// Action column (right)
 	if (!$conf->main_checkbox_left_column) {
 		print '<td class="nowrap center">';
-		if ($massactionbutton || $massaction) {   // If we are in select mode (massactionbutton defined) or if we have already selected and sent an action ($massaction) defined
-			$selected = 0;
-			if (in_array($obj->rowid, $arrayofselected)) {
-				$selected = 1;
-			}
+		if ($massactionbutton || $massaction) {
+			$selected = in_array($obj->rowid, $arrayofselected) ? 1 : 0;
 			print '<input id="cb'.$obj->rowid.'" class="flat checkforselect" type="checkbox" name="toselect[]" value="'.$obj->rowid.'"'.($selected ? ' checked="checked"' : '').'>';
 		}
 		print '</td>';
@@ -764,7 +658,7 @@ if ($num == 0) {
 $db->free($resql);
 
 $parameters = array('arrayfields' => $arrayfields, 'sql' => $sql);
-$reshook = $hookmanager->executeHooks('printFieldListFooter', $parameters, $object, $action); // Note that $action and $object may have been modified by hook
+$reshook = $hookmanager->executeHooks('printFieldListFooter', $parameters, $object, $action);
 print $hookmanager->resPrint;
 
 print '</table>'."\n";

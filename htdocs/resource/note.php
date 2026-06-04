@@ -22,8 +22,8 @@
 
 /**
  *	\file       htdocs/resource/note.php
- *	\ingroup    fichinter
- *	\brief      Fiche d'information sur une resource
+ *	\ingroup    resource
+ *	\brief      Notes tab for a resource object
  */
 
 // Load Dolibarr environment
@@ -40,18 +40,16 @@ require_once DOL_DOCUMENT_ROOT.'/core/lib/resource.lib.php';
  */
 
 // Load translation files required by the page
-$langs->loadLangs(array('companies', 'interventions'));
+$langs->loadLangs(array('resource', 'companies'));
 
-$id = GETPOSTINT('id');
-$ref = GETPOST('ref', 'alpha');
+$id     = GETPOSTINT('id');
+$ref    = GETPOST('ref', 'alpha');
 $action = GETPOST('action', 'aZ09');
 
 // Security check
-if ($user->socid) {
-	$socid = $user->socid;
-}
-// Initialize a technical object to manage hooks of page. Note that conf->hooks_modules contains an array of hook context
-$hookmanager->initHooks(array('resourcenote'));
+$socid = ($user->socid ? $user->socid : 0);
+
+$hookmanager->initHooks(array('resourcenote', 'globalcard'));
 
 $object = new Dolresource($db);
 
@@ -60,7 +58,11 @@ include DOL_DOCUMENT_ROOT.'/core/actions_fetchobject.inc.php'; // Must be 'inclu
 
 $result = restrictedArea($user, 'resource', $object->id, 'resource');
 
-$permissionnote = $user->hasRight('resource', 'write'); // Used by the include of actions_setnotes.inc.php
+$permissionnote = $user->hasRight('resource', 'write'); // Used by actions_setnotes.inc.php
+$permissiontoread = $user->hasRight('resource', 'read');
+if (!$permissiontoread) {
+	accessforbidden();
+}
 
 
 /*
@@ -68,7 +70,7 @@ $permissionnote = $user->hasRight('resource', 'write'); // Used by the include o
  */
 
 $parameters = array();
-$reshook = $hookmanager->executeHooks('doActions', $parameters, $object, $action); // Note that $action and $object may have been modified by some hooks
+$reshook = $hookmanager->executeHooks('doActions', $parameters, $object, $action);
 if ($reshook < 0) {
 	setEventMessages($hookmanager->error, $hookmanager->errors, 'errors');
 }
@@ -81,45 +83,35 @@ if (empty($reshook)) {
  * View
  */
 
-$title = '';
 $help_url = '';
-llxHeader('', $title, $help_url, '', 0, 0, '', '', '', 'mod-resource page-card_notes');
+llxHeader('', $langs->trans('ResourceSingular'), $help_url, '', 0, 0, '', '', '', 'mod-resource page-card_notes');
 
 $form = new Form($db);
 
-if ($id > 0 || !empty($ref)) {
+if ($object->id > 0) {
 	$head = resource_prepare_head($object);
 	print dol_get_fiche_head($head, 'note', $langs->trans('ResourceSingular'), -1, 'resource');
 
 	$linkback = '<a href="'.DOL_URL_ROOT.'/resource/list.php'.(!empty($socid) ? '?id='.$socid : '').'">'.$langs->trans("BackToList").'</a>';
 
-
-	$morehtmlref = '<div class="refidno">';
-	$morehtmlref .= '</div>';
-
+	$morehtmlref = '<div class="refidno"></div>';
 
 	dol_banner_tab($object, 'ref', $linkback, 1, 'ref', 'ref', $morehtmlref);
-
 
 	print '<div class="fichecenter">';
 	print '<div class="underbanner clearboth"></div>';
 
 	print '<table class="border tableforfield centpercent">';
-
-	// Resource type
 	print '<tr>';
 	print '<td class="titlefield">'.$langs->trans("ResourceType").'</td>';
-	print '<td>';
-	print $object->type_label;
-	print '</td>';
+	print '<td>'.dol_escape_htmltag($object->type_label).'</td>';
 	print '</tr>';
-
 	print "</table>";
 
 	print '</div>';
 
 	$permission = $user->hasRight('resource', 'write');
-	$cssclass = 'titlefield';
+	$cssclass   = 'titlefield';
 	include DOL_DOCUMENT_ROOT.'/core/tpl/notes.tpl.php';
 
 	print dol_get_fiche_end();

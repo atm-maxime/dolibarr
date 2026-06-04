@@ -26,7 +26,7 @@
 /**
  *       \file       htdocs/resource/document.php
  *       \ingroup    resource
- *       \brief      Page des documents joints sur les resources
+ *       \brief      Attached documents tab for resources
  */
 
 // Load Dolibarr environment
@@ -48,27 +48,23 @@ require_once DOL_DOCUMENT_ROOT.'/core/class/html.formfile.class.php';
 // Load translation files required by the page
 $langs->loadLangs(array('other', 'resource', 'companies'));
 
-$id = GETPOSTINT('id');
-$ref = GETPOST('ref', 'alpha');
-$action = GETPOST('action', 'aZ09');
+$id      = GETPOSTINT('id');
+$ref     = GETPOST('ref', 'alpha');
+$action  = GETPOST('action', 'aZ09');
 $confirm = GETPOST('confirm', 'alpha');
 
 // Security check
-if ($user->socid) {
-	$socid = $user->socid;
-}
-$result = restrictedArea($user, 'resource', $id, 'resource');
-
+$socid = ($user->socid ? $user->socid : 0);
 
 // Get parameters
-$limit = GETPOSTINT('limit') ? GETPOSTINT('limit') : $conf->liste_limit;
+$limit     = GETPOSTINT('limit') ? GETPOSTINT('limit') : $conf->liste_limit;
 $sortfield = GETPOST('sortfield', 'aZ09comma');
 $sortorder = GETPOST('sortorder', 'aZ09comma');
-$page = GETPOSTISSET('pageplusone') ? (GETPOSTINT('pageplusone') - 1) : GETPOSTINT("page");
+$page      = GETPOSTISSET('pageplusone') ? (GETPOSTINT('pageplusone') - 1) : GETPOSTINT("page");
 if (empty($page) || $page == -1) {
 	$page = 0;
-}     // If $page is not defined, or '' or -1
-$offset = $limit * $page;
+}
+$offset   = $limit * $page;
 $pageprev = $page - 1;
 $pagenext = $page + 1;
 if (!$sortorder) {
@@ -78,18 +74,24 @@ if (!$sortfield) {
 	$sortfield = "name";
 }
 
+$hookmanager->initHooks(array('resourcedocument', 'globalcard'));
 
 $object = new Dolresource($db);
 
 // Load object
 include DOL_DOCUMENT_ROOT.'/core/actions_fetchobject.inc.php'; // Must be 'include', not 'include_once'.
 
-$upload_dir = $conf->resource->dir_output.'/'.dol_sanitizeFileName($object->ref);
-$modulepart = 'resource';
-
 $result = restrictedArea($user, 'resource', $object->id, 'resource');
 
-$permissiontoadd = $user->hasRight('resource', 'write'); // Used by the include of actions_addupdatedelete.inc.php and actions_linkedfiles
+$permissiontoread = $user->hasRight('resource', 'read');
+$permissiontoadd  = $user->hasRight('resource', 'write'); // Used by actions_linkedfiles
+
+if (!$permissiontoread) {
+	accessforbidden();
+}
+
+$upload_dir = $conf->resource->dir_output.'/'.dol_sanitizeFileName($object->ref);
+$modulepart = 'resource';
 
 
 /*
@@ -103,58 +105,47 @@ include DOL_DOCUMENT_ROOT.'/core/actions_linkedfiles.inc.php';
  * View
  */
 
-$form = new Form($db);
+$form     = new Form($db);
 $help_url = '';
 llxHeader('', $langs->trans("Resource"), $help_url, '', 0, 0, '', '', '', 'mod-resource page-card_documents');
 
 if ($object->id > 0) {
-	$object->fetch_thirdparty();
-
 	$head = resource_prepare_head($object);
 
 	print dol_get_fiche_head($head, 'documents', $langs->trans("ResourceSingular"), -1, 'resource');
 
-
 	// Build file list
 	$filearray = dol_dir_list($upload_dir, "files", 0, '', '(\.meta|_preview.*\.png)$', $sortfield, (strtolower($sortorder) == 'desc' ? SORT_DESC : SORT_ASC), 1);
 	$totalsize = 0;
-	foreach ($filearray as $key => $file) {
+	foreach ($filearray as $file) {
 		$totalsize += $file['size'];
 	}
 
-
 	$linkback = '<a href="'.DOL_URL_ROOT.'/resource/list.php'.(!empty($socid) ? '?id='.$socid : '').'">'.$langs->trans("BackToList").'</a>';
 
-
-	$morehtmlref = '<div class="refidno">';
-	$morehtmlref .= '</div>';
-
+	$morehtmlref = '<div class="refidno"></div>';
 
 	dol_banner_tab($object, 'ref', $linkback, 1, 'ref', 'ref', $morehtmlref);
-
 
 	print '<div class="fichecenter">';
 	print '<div class="underbanner clearboth"></div>';
 
 	print '<table class="border tableforfield centpercent">';
 
-	// Resource type
 	print '<tr>';
 	print '<td class="titlefield">'.$langs->trans("ResourceType").'</td>';
-	print '<td>';
-	print $object->type_label;
-	print '</td>';
+	print '<td>'.dol_escape_htmltag($object->type_label).'</td>';
 	print '</tr>';
 
 	print '<tr><td>'.$langs->trans("NbOfAttachedFiles").'</td><td colspan="3">'.count($filearray).'</td></tr>';
 	print '<tr><td>'.$langs->trans("TotalSizeOfAttachedFiles").'</td><td colspan="3">'.dol_print_size($totalsize, 1, 1).'</td></tr>';
-	print '</table>';
 
+	print '</table>';
 	print '</div>';
 
 	print dol_get_fiche_end();
 
-	$modulepart = 'dolresource';
+	$modulepart      = 'dolresource';
 	$permissiontoadd = $user->hasRight('resource', 'write');
 
 	include DOL_DOCUMENT_ROOT.'/core/tpl/document_actions_post_headers.tpl.php';
