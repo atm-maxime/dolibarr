@@ -145,6 +145,68 @@ if (empty($reshook)) {
 	include DOL_DOCUMENT_ROOT.'/core/actions_changeselectedfields.inc.php';
 }
 
+if ($action == 'add_contact_from_other_soc' && !$cancel && $user->hasRight('societe', 'contact', 'creer')) {
+	$contactid_from_other = GETPOSTINT('contactid_from_other');
+	$roles_from_other = GETPOST('roles_from_other', 'array');
+
+	if ($contactid_from_other <= 0) {
+		setEventMessages($langs->trans("ErrorFieldRequired", $langs->transnoentitiesnoconv("Contact")), null, 'errors');
+	} elseif (empty($roles_from_other)) {
+		setEventMessages($langs->trans("ErrorFieldRequired", $langs->transnoentitiesnoconv("Role")), null, 'errors');
+	} else {
+		$contacttolink = new Contact($db);
+		$ret = $contacttolink->fetch($contactid_from_other);
+		if ($ret > 0 && $contacttolink->fk_soc == $socid) {
+			setEventMessages($langs->trans("ContactAlreadyBelongsToThisThirdParty"), null, 'errors');
+		} else {
+			$error = 0;
+			$db->begin();
+			foreach ($roles_from_other as $roleid) {
+				$roleid = (int) $roleid;
+				if ($roleid <= 0) {
+					continue;
+				}
+				$sql = "INSERT INTO ".MAIN_DB_PREFIX."societe_contacts";
+				$sql .= " (entity, date_creation, fk_soc, fk_c_type_contact, fk_socpeople)";
+				$sql .= " VALUES (".$conf->entity.",'".$db->idate(dol_now())."',".$socid.",".$roleid.",".$contactid_from_other.")";
+				$result = $db->query($sql);
+				if (!$result) {
+					if ($db->lasterrno() == 'DB_ERROR_RECORD_ALREADY_EXISTS') {
+						continue;
+					}
+					$error++;
+					setEventMessages($db->lasterror(), null, 'errors');
+					break;
+				}
+			}
+			if (!$error) {
+				$db->commit();
+				setEventMessages($langs->trans("ContactLinkedSuccessfully"), null, 'mesgs');
+			} else {
+				$db->rollback();
+			}
+			header("Location: ".$_SERVER['PHP_SELF']."?id=".$socid);
+			exit();
+		}
+	}
+}
+
+if ($action == 'confirm_unlink_contact_from_soc' && $user->hasRight('societe', 'contact', 'delete')) {
+	$contactid = GETPOSTINT('contactid');
+	if ($contactid > 0 && $socid > 0) {
+		$sql = "DELETE FROM ".MAIN_DB_PREFIX."societe_contacts WHERE fk_soc = ".((int) $socid)." AND fk_socpeople = ".((int) $contactid);
+		$sql .= " AND entity IN (".getEntity('societe').")";
+		$result = $db->query($sql);
+		if ($result) {
+			setEventMessages($langs->trans("ContactUnlinkedSuccessfully"), null, 'mesgs');
+		} else {
+			setEventMessages($db->lasterror(), null, 'errors');
+		}
+		header("Location: ".$_SERVER['PHP_SELF']."?id=".$socid);
+		exit();
+	}
+}
+
 if ($action == 'confirm_delete' && $user->hasRight('societe', 'contact', 'delete')) {
 	$id = GETPOSTINT('id');
 	if ($id > 0 && $socid > 0) {
@@ -221,7 +283,25 @@ if ($action != 'presend') {
 	if (!getDolGlobalString('SOCIETE_DISABLE_CONTACTS')) {
 		$showuserlogin = in_array('u.user', explode(',', $selectedfields)) ? 1 : 0;
 		$result = show_contacts($conf, $langs, $db, $object, $_SERVER["PHP_SELF"].'?socid='.$object->id, $showuserlogin);
+
+		print '<br>';
+
+		// Contacts from other thirdparties linked to this one
+		$result = show_contacts_from_other_thirdparties($conf, $langs, $db, $object, $_SERVER["PHP_SELF"].'?socid='.$object->id);
 	}
+}
+if ($action == 'unlink_contact_from_soc') {
+	$contactid = GETPOSTINT('contactid');
+	$formconfirm = $form->formconfirm(
+		$_SERVER["PHP_SELF"].'?contactid='.$contactid.'&id='.$socid,
+		$langs->trans('UnlinkContactFromThirdParty'),
+		$langs->trans('ConfirmUnlinkContactFromThirdParty'),
+		'confirm_unlink_contact_from_soc',
+		'',
+		0,
+		1
+	);
+	print $formconfirm;
 }
 if ($action == 'delete') {
 	$formconfirm = $form->formconfirm(

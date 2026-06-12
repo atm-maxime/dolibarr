@@ -1854,6 +1854,229 @@ function show_contacts($conf, $langs, $db, $object, $backtopage = '', $showuserl
 	return $i;
 }
 
+/**
+ * Show html area with contacts from other thirdparties linked to the given thirdparty via societe_contacts.
+ *
+ * @param	Conf		$conf		Object conf
+ * @param	Translate	$langs		Object langs
+ * @param	DoliDB		$db			Object db
+ * @param	Societe		$object		Object thirdparty
+ * @param	string		$backtopage	Back to page
+ * @return	int						Return integer <0 if KO, nb of found records if OK
+ */
+function show_contacts_from_other_thirdparties($conf, $langs, $db, $object, $backtopage = '')
+{
+	global $user, $hookmanager;
+
+	require_once DOL_DOCUMENT_ROOT . '/core/class/html.formcompany.class.php';
+	require_once DOL_DOCUMENT_ROOT . '/societe/class/societe.class.php';
+	$formcompany = new FormCompany($db);
+	$form = new Form($db);
+	$contactstatic = new Contact($db);
+
+	// Contacts from other companies linked to this one via societe_contacts
+	$sql = "SELECT t.rowid, t.entity, t.lastname, t.firstname, t.fk_pays AS country_id, t.civility AS civility_id,";
+	$sql .= " t.poste, t.phone AS phone_pro, t.phone_mobile, t.phone_perso, t.fax, t.email, t.socialnetworks,";
+	$sql .= " t.statut, t.photo, t.fk_soc, t.address, t.zip, t.town, t.note_private,";
+	$sql .= " s.nom AS fk_soc_name, s.rowid AS fk_soc_rowid";
+	$sql .= " FROM " . MAIN_DB_PREFIX . "socpeople AS t";
+	$sql .= " LEFT JOIN " . MAIN_DB_PREFIX . "societe AS s ON s.rowid = t.fk_soc";
+	$sql .= " WHERE EXISTS (";
+	$sql .= "  SELECT sc.rowid FROM " . MAIN_DB_PREFIX . "societe_contacts sc";
+	$sql .= "  WHERE sc.fk_socpeople = t.rowid AND sc.fk_soc = " . ((int) $object->id);
+	$sql .= "  AND sc.entity IN (" . getEntity('societe') . ")";
+	$sql .= " )";
+	$sql .= " AND (t.fk_soc IS NULL OR t.fk_soc != " . ((int) $object->id) . ")";
+	$sql .= " AND t.entity IN (" . getEntity('socpeople') . ")";
+	$sql .= " AND ((t.fk_user_creat = " . ((int) $user->id) . " AND t.priv = 1) OR t.priv = 0)";
+	$sql .= " ORDER BY t.lastname ASC, t.firstname ASC";
+
+	dol_syslog('core/lib/company.lib.php :: show_contacts_from_other_thirdparties', LOG_DEBUG);
+	$result = $db->query($sql);
+	if (!$result) {
+		dol_print_error($db);
+		return -1;
+	}
+
+	$num = $db->num_rows($result);
+
+	// Title with link to show the add form
+	$newcardbutton = '';
+	if ($user->hasRight('societe', 'contact', 'creer')) {
+		$newcardbutton = '<a class="butActionNew" href="#" onclick="jQuery(\'#linkcontactfromothertp\').slideToggle(); return false;">';
+		$newcardbutton .= '<span class="fa fa-plus-circle valignmiddle btnTitle-icon"></span>';
+		$newcardbutton .= '<span class="valignmiddle">' . $langs->trans("LinkContactFromOtherThirdParty") . '</span>';
+		$newcardbutton .= '</a>';
+	}
+
+	print "\n";
+	$title = (getDolGlobalString('SOCIETE_ADDRESSES_MANAGEMENT') ? $langs->trans("ContactsFromOtherThirdParties") : $langs->trans("ContactsFromOtherThirdParties"));
+	print load_fiche_titre($title, $newcardbutton, 'contact');
+
+	// Add form (hidden by default)
+	if ($user->hasRight('societe', 'contact', 'creer')) {
+		print '<div id="linkcontactfromothertp" style="display:none;" class="fichecenter">';
+		print '<form method="POST" action="' . DOL_URL_ROOT . '/societe/contact.php">';
+		print '<input type="hidden" name="token" value="' . newToken() . '">';
+		print '<input type="hidden" name="action" value="add_contact_from_other_soc">';
+		print '<input type="hidden" name="id" value="' . $object->id . '">';
+		print '<input type="hidden" name="backtopage" value="' . dol_escape_htmltag($backtopage) . '">';
+
+		print '<table class="border centpercent">';
+		print '<tr>';
+		print '<td class="fieldrequired titlefieldcreate">' . $langs->trans("Contact") . '</td>';
+		print '<td>';
+		print $form->select_contact(0, '', 'contactid_from_other', $langs->trans('SelectContact'), '', '', 0, 'minwidth300', false, 1);
+		print '</td>';
+		print '</tr>';
+		print '<tr>';
+		print '<td class="fieldrequired titlefieldcreate">' . $langs->trans("Role") . '</td>';
+		print '<td>';
+		$emptycontact = new Contact($db);
+		$emptycontact->roles = array();
+		print $formcompany->showRoles("roles_from_other", $emptycontact, 'edit', array(), 'minwidth300 maxwidth500');
+		print '</td>';
+		print '</tr>';
+		print '</table>';
+
+		print '<div class="center">';
+		print '<input type="submit" class="button" value="' . dol_escape_htmltag($langs->trans("LinkContact")) . '">';
+		print ' &nbsp; <input type="button" class="button button-cancel" value="' . dol_escape_htmltag($langs->trans("Cancel")) . '" onclick="jQuery(\'#linkcontactfromothertp\').slideToggle();">';
+		print '</div>';
+		print '</form>';
+		print '</div>';
+		print '<br>';
+	}
+
+	print '<div class="div-table-responsive-no-min">';
+	print "\n" . '<table class="tagtable liste noborder">' . "\n";
+
+	// Column headers
+	print '<tr class="liste_titre">';
+	print '<th class="wrapcolumntitle liste_titre">' . $langs->trans("Name") . '</th>';
+	print '<th class="wrapcolumntitle liste_titre">' . $langs->trans("PostOrFunction") . '</th>';
+	print '<th class="wrapcolumntitle liste_titre">' . $langs->trans("Address") . '</th>';
+	print '<th class="wrapcolumntitle liste_titre">' . $langs->trans("ContactByDefaultFor") . '</th>';
+	print '<th class="wrapcolumntitle liste_titre">' . $langs->trans("ThirdParty") . '</th>';
+	print '<th class="wrapcolumntitle liste_titre center">' . $langs->trans("Status") . '</th>';
+	print '<th class="wrapcolumntitle liste_titre center">&nbsp;</th>';
+	print '</tr>' . "\n";
+
+	$i = 0;
+	if ($num > 0) {
+		while ($i < $num) {
+			$obj = $db->fetch_object($result);
+
+			$contactstatic->id = $obj->rowid;
+			$contactstatic->ref = $obj->rowid;
+			$contactstatic->status = $obj->statut;
+			$contactstatic->statut = $obj->statut;
+			$contactstatic->lastname = $obj->lastname;
+			$contactstatic->firstname = $obj->firstname;
+			$contactstatic->civility_id = $obj->civility_id;
+			$contactstatic->civility_code = $obj->civility_id;
+			$contactstatic->poste = $obj->poste;
+			$contactstatic->address = $obj->address;
+			$contactstatic->zip = $obj->zip;
+			$contactstatic->town = $obj->town;
+			$contactstatic->phone_pro = $obj->phone_pro;
+			$contactstatic->phone_mobile = $obj->phone_mobile;
+			$contactstatic->phone_perso = $obj->phone_perso;
+			$contactstatic->email = $obj->email;
+			$contactstatic->socialnetworks = $obj->socialnetworks;
+			$contactstatic->photo = $obj->photo;
+			$contactstatic->fk_soc = $obj->fk_soc;
+			$contactstatic->entity = $obj->entity;
+
+			$country_code = getCountry($obj->country_id, '2');
+			$contactstatic->country_code = $country_code;
+			$contactstatic->setGenderFromCivility();
+
+			// Fetch roles only for the current company
+			$contactstatic->roles = array();
+			$sql_roles = "SELECT tc.rowid, tc.element, tc.source, tc.code, tc.libelle AS label, sc.rowid AS contactroleid, sc.fk_soc AS socid";
+			$sql_roles .= " FROM " . MAIN_DB_PREFIX . "societe_contacts AS sc, " . MAIN_DB_PREFIX . "c_type_contact AS tc";
+			$sql_roles .= " WHERE tc.rowid = sc.fk_c_type_contact";
+			$sql_roles .= " AND tc.source = 'external' AND tc.active = 1";
+			$sql_roles .= " AND sc.fk_socpeople = " . ((int) $contactstatic->id);
+			$sql_roles .= " AND sc.fk_soc = " . ((int) $object->id);
+			$sql_roles .= " AND sc.entity IN (" . getEntity('societe') . ")";
+			$resql_roles = $db->query($sql_roles);
+			if ($resql_roles) {
+				while ($obj_role = $db->fetch_object($resql_roles)) {
+					$transkey = "TypeContact_" . $obj_role->element . "_" . $obj_role->source . "_" . $obj_role->code;
+					$libelle_element = $langs->trans('ContactDefault_' . $obj_role->element);
+					$contactstatic->roles[$obj_role->contactroleid] = array(
+						'id' => $obj_role->rowid,
+						'socid' => $obj_role->socid,
+						'element' => $obj_role->element,
+						'source' => $obj_role->source,
+						'code' => $obj_role->code,
+						'label' => $libelle_element . ' - ' . ($langs->trans($transkey) != $transkey ? $langs->trans($transkey) : $obj_role->label),
+					);
+				}
+			}
+
+			print '<tr class="oddeven">';
+
+			// Photo - Name
+			print '<td class="tdoverflowmax150">';
+			print $form->showphoto('contact', $contactstatic, 0, 0, 0, 'photorefnoborder valignmiddle marginrightonly', 'small', 1, 0, 'user');
+			print $contactstatic->getNomUrl(0, '', 0, '&backtopage=' . urlencode($backtopage));
+			print '</td>';
+
+			// Job position
+			print '<td class="tdoverflowmax100" title="' . dol_escape_htmltag($obj->poste) . '">';
+			if ($obj->poste) {
+				print dol_escape_htmltag($obj->poste);
+			}
+			print '</td>';
+
+			// Address - Phone - Email
+			$addresstoshow = $contactstatic->getBannerAddress('contact', $object);
+			print '<td class="tdoverflowmax150 classfortooltip" title="' . dolPrintHTMLForAttribute($addresstoshow) . '">';
+			print $addresstoshow;
+			print '</td>';
+
+			// Roles for this company
+			print '<td class="tdoverflowmax150">';
+			print $formcompany->showRoles("roles_view_" . $obj->rowid, $contactstatic, 'view');
+			print '</td>';
+
+			// Origin thirdparty
+			print '<td class="tdoverflowmax150">';
+			if (!empty($obj->fk_soc_rowid)) {
+				print '<a href="' . DOL_URL_ROOT . '/societe/card.php?socid=' . ((int) $obj->fk_soc_rowid) . '">';
+				print dol_escape_htmltag($obj->fk_soc_name);
+				print '</a>';
+			}
+			print '</td>';
+
+			// Status
+			print '<td class="center">' . $contactstatic->getLibStatut(5) . '</td>';
+
+			// Actions
+			print '<td class="nowrap center">';
+			if ($user->hasRight('societe', 'contact', 'delete')) {
+				print '<a href="' . DOL_URL_ROOT . '/societe/contact.php?action=unlink_contact_from_soc&token=' . newToken() . '&contactid=' . ((int) $obj->rowid) . '&id=' . ((int) $object->id) . '">';
+				print img_picto($langs->trans("UnlinkContactFromThirdParty"), 'unlink');
+				print '</a>';
+			}
+			print '</td>';
+
+			print "</tr>\n";
+			$i++;
+		}
+	} else {
+		print '<tr><td colspan="7"><span class="opacitymedium">' . $langs->trans("NoRecordFound") . '</span></td></tr>';
+	}
+
+	print "\n</table>\n";
+	print '</div>';
+
+	return $num;
+}
+
 
 /**
  *    	Show html area with actions to do
