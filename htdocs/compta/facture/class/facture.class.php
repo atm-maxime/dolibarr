@@ -20,7 +20,7 @@
  * Copyright (C) 2022       Sylvain Legrand         <contact@infras.fr>
  * Copyright (C) 2022-2023	Solution Libre SAS		<contact@solution-libre.fr>
  * Copyright (C) 2023      	Gauthier VERDOL       	<gauthier.verdol@atm-consulting.fr>
- * Copyright (C) 2023		Nick Fragoulis
+ * Copyright (C) 2023-2026	Nick Fragoulis
  * Copyright (C) 2024-2025	MDW						<mdeweerd@users.noreply.github.com>
  * Copyright (C) 2024-2025  Frédéric France         <frederic.france@free.fr>
  * Copyright (C) 2025		Lenin Rivas				<lenin.rivas777@gmail.com>
@@ -456,7 +456,7 @@ class Facture extends CommonInvoice
 	 *
 	 * 	@param	DoliDB		$db			Database handler
 	 */
-	public function __construct(DoliDB $db)
+	public function __construct($db)
 	{
 		$this->db = $db;
 
@@ -569,12 +569,13 @@ class Facture extends CommonInvoice
 			$previousdaynextdatewhen = null;
 
 			if ($originaldatewhen) {
+				// date_when is read from database in the timezone of the server (jdate), so delays must be added in this timezone
 				if ($_facrec->rule_for_lines_dates == 'postpaid') {		// Bugged feature, should use different variable nameas we store something different.
-					$previousdaynextdatewhen = dol_time_plus_duree($originaldatewhen, -1, 'd');
-					$originaldatewhen = dol_time_plus_duree($originaldatewhen, -$_facrec->frequency, $_facrec->unit_frequency);
+					$previousdaynextdatewhen = dol_time_plus_duree($originaldatewhen, -1, 'd', 0, 'tzserver');
+					$originaldatewhen = dol_time_plus_duree($originaldatewhen, -$_facrec->frequency, $_facrec->unit_frequency, 0, 'tzserver');
 				} else {
-					$nextdatewhen = dol_time_plus_duree($originaldatewhen, (int) $_facrec->frequency, $_facrec->unit_frequency);
-					$previousdaynextdatewhen = dol_time_plus_duree($nextdatewhen, -1, 'd');
+					$nextdatewhen = dol_time_plus_duree($originaldatewhen, (int) $_facrec->frequency, $_facrec->unit_frequency, 0, 'tzserver');
+					$previousdaynextdatewhen = dol_time_plus_duree($nextdatewhen, -1, 'd', 0, 'tzserver');
 				}
 			}
 
@@ -661,15 +662,15 @@ class Facture extends CommonInvoice
 
 			// Array of possible substitutions (See also file mailing-send.php that should manage same substitutions)
 			$substitutionarray = getCommonSubstitutionArray($outputlangs, 0, null, $this);
-			$substitutionarray['__INVOICE_PREVIOUS_MONTH__'] = dol_print_date(dol_time_plus_duree($this->date, -1, 'm'), '%m');
+			$substitutionarray['__INVOICE_PREVIOUS_MONTH__'] = dol_print_date(dol_time_plus_duree($this->date, -1, 'm', 0, 'tzserver'), '%m');
 			$substitutionarray['__INVOICE_MONTH__'] = dol_print_date($this->date, '%m');
-			$substitutionarray['__INVOICE_NEXT_MONTH__'] = dol_print_date(dol_time_plus_duree($this->date, 1, 'm'), '%m');
-			$substitutionarray['__INVOICE_PREVIOUS_MONTH_TEXT__'] = dol_print_date(dol_time_plus_duree($this->date, -1, 'm'), '%B');
+			$substitutionarray['__INVOICE_NEXT_MONTH__'] = dol_print_date(dol_time_plus_duree($this->date, 1, 'm', 0, 'tzserver'), '%m');
+			$substitutionarray['__INVOICE_PREVIOUS_MONTH_TEXT__'] = dol_print_date(dol_time_plus_duree($this->date, -1, 'm', 0, 'tzserver'), '%B');
 			$substitutionarray['__INVOICE_MONTH_TEXT__'] = dol_print_date($this->date, '%B');
-			$substitutionarray['__INVOICE_NEXT_MONTH_TEXT__'] = dol_print_date(dol_time_plus_duree($this->date, 1, 'm'), '%B');
-			$substitutionarray['__INVOICE_PREVIOUS_YEAR__'] = dol_print_date(dol_time_plus_duree($this->date, -1, 'y'), '%Y');
+			$substitutionarray['__INVOICE_NEXT_MONTH_TEXT__'] = dol_print_date(dol_time_plus_duree($this->date, 1, 'm', 0, 'tzserver'), '%B');
+			$substitutionarray['__INVOICE_PREVIOUS_YEAR__'] = dol_print_date(dol_time_plus_duree($this->date, -1, 'y', 0, 'tzserver'), '%Y');
 			$substitutionarray['__INVOICE_YEAR__'] = dol_print_date($this->date, '%Y');
-			$substitutionarray['__INVOICE_NEXT_YEAR__'] = dol_print_date(dol_time_plus_duree($this->date, 1, 'y'), '%Y');
+			$substitutionarray['__INVOICE_NEXT_YEAR__'] = dol_print_date(dol_time_plus_duree($this->date, 1, 'y', 0, 'tzserver'), '%Y');
 			// Only for template invoice
 			$substitutionarray['__INVOICE_DATE_NEXT_INVOICE_BEFORE_GEN__'] = (isset($originaldatewhen) ? dol_print_date($originaldatewhen, 'dayhour') : '');
 			$substitutionarray['__INVOICE_DATE_NEXT_INVOICE_AFTER_GEN__'] = (isset($nextdatewhen) ? dol_print_date($nextdatewhen, 'dayhour') : '');
@@ -4117,14 +4118,19 @@ class Facture extends CommonInvoice
 						$mouvP->setOrigin($this->element, $this->id);
 						// We decrease stock for product
 						if ($this->type == self::TYPE_CREDIT_NOTE) {
-							$result = $mouvP->livraison($user, $this->lines[$i]->fk_product, $idwarehouse, $this->lines[$i]->qty, $this->lines[$i]->subprice, $langs->trans("InvoiceBackToDraftInDolibarr", $this->ref));
+							$result = $mouvP->livraison($user, $this->lines[$i]->fk_product, $idwarehouse, $this->lines[$i]->qty, $this->lines[$i]->subprice, $langs->transnoentitiesnoconv("InvoiceBackToDraftInDolibarr", $this->ref));
 						} else {
-							$result = $mouvP->reception($user, $this->lines[$i]->fk_product, $idwarehouse, $this->lines[$i]->qty, 0, $langs->trans("InvoiceBackToDraftInDolibarr", $this->ref)); // we use 0 for price, to not change the weighted average value
+							$result = $mouvP->reception($user, $this->lines[$i]->fk_product, $idwarehouse, $this->lines[$i]->qty, 0, $langs->transnoentitiesnoconv("InvoiceBackToDraftInDolibarr", $this->ref)); // we use 0 for price, to not change the weighted average value
+						}
+						if ($result < 0) {
+							$error++;
+							$this->setErrorsFromObject($mouvP);
+							dol_syslog(__METHOD__." stock movement failed for line ".$i.": ".$mouvP->error, LOG_ERR);
+							break;
 						}
 					}
 				}
 			}
-
 			if ($error == 0) {
 				$old_statut = $this->status;
 				$this->statut = self::STATUS_DRAFT;	// deprecated
